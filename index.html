@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAINLINE — Abhishek's Bulk Up Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">GAINLINE</span>
+    </div>
+    <button class="edit-profile-btn" id="editProfileBtn" aria-label="Edit profile">Edit profile</button>
+  </header>
+
+  <main class="screens">
+
+    <!-- ============ DASHBOARD ============ -->
+    <section class="screen active" id="screen-dashboard">
+
+      <div class="hero">
+        <div class="hero-text">
+          <p class="hero-eyebrow-free">Day <span id="dayStreak">1</span> of the plan</p>
+          <h1 id="heroName">Hey Abhishek, let's put on some weight.</h1>
+        </div>
+        <div class="hero-stat-block">
+          <div class="hero-stat">
+            <span class="hero-stat-value" id="currentWeightHero">37.0</span>
+            <span class="hero-stat-unit">kg today</span>
+          </div>
+          <div class="hero-stat-arrow">→</div>
+          <div class="hero-stat">
+            <span class="hero-stat-value" id="targetWeightHero">55.0</span>
+            <span class="hero-stat-unit">kg goal</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-grid">
+
+        <div class="card card-bmi">
+          <p class="card-label">Body mass index</p>
+          <p class="card-big" id="bmiValue">14.8</p>
+          <p class="card-sub" id="bmiCategory">Underweight — building a surplus will help</p>
+          <div class="bmi-scale">
+            <div class="bmi-scale-fill" id="bmiScaleFill"></div>
+            <div class="bmi-scale-marker" id="bmiScaleMarker"></div>
+          </div>
+        </div>
+
+        <div class="card card-calories">
+          <p class="card-label">Calories today</p>
+          <p class="card-big"><span id="caloriesEatenToday">0</span><span class="card-big-of">/<span id="calorieGoalDisplay">2300</span></span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-coral" id="calorieProgressFill"></div>
+          </div>
+          <p class="card-sub" id="calorieRemainingText">2300 kcal left to hit today's surplus</p>
+        </div>
+
+        <div class="card card-protein">
+          <p class="card-label">Protein today</p>
+          <p class="card-big"><span id="proteinEatenToday">0</span><span class="card-big-of">/<span id="proteinGoalDisplay">67</span>g</span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-yellow" id="proteinProgressFill"></div>
+          </div>
+          <p class="card-sub">Protein is what turns the surplus into muscle, not just fat.</p>
+        </div>
+
+        <div class="card card-water">
+          <p class="card-label">Water today</p>
+          <p class="card-big"><span id="waterCountToday">0</span><span class="card-big-of">/<span id="waterGoalDisplay">10</span> glasses</span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-teal" id="waterProgressFill"></div>
+          </div>
+          <p class="card-sub">≈ <span id="waterMlToday">0</span> ml of <span id="waterGoalMl">2500</span> ml</p>
+        </div>
+
+      </div>
+
+      <div class="tip-strip" id="tipStrip">
+        <p id="tipText">Small appetite, frequent plate: aim for 5–6 smaller meals instead of 3 big ones today.</p>
+      </div>
+
+    </section>
+
+    <!-- ============ FOOD ============ -->
+    <section class="screen" id="screen-food">
+      <h2 class="screen-title">Food tracker</h2>
+      <p class="screen-sub">Log every meal and snack — surplus adds up in small bites.</p>
+
+      <form class="log-form" id="foodForm">
+        <input type="text" id="foodName" placeholder="What did you eat?" required maxlength="60">
+        <div class="log-form-row">
+          <input type="number" id="foodCalories" placeholder="Calories" min="0" required>
+          <input type="number" id="foodProtein" placeholder="Protein (g)" min="0">
+        </div>
+        <button type="submit" class="btn-primary">Add to today's log</button>
+      </form>
+
+      <div class="progress-track big-track">
+        <div class="progress-fill fill-coral" id="foodScreenProgressFill"></div>
+      </div>
+      <p class="screen-progress-label"><span id="foodScreenEaten">0</span> of <span id="foodScreenGoal">2300</span> kcal · <span id="foodScreenProtein">0</span>g protein</p>
+
+      <ul class="entry-list" id="foodEntryList">
+        <li class="empty-state">Nothing logged yet today. Add your first meal above.</li>
+      </ul>
+    </section>
+
+    <!-- ============ WATER ============ -->
+    <section class="screen" id="screen-water">
+      <h2 class="screen-title">Water tracker</h2>
+      <p class="screen-sub">One glass = 250 ml. Tap to log as you drink.</p>
+
+      <div class="water-dial">
+        <svg viewBox="0 0 200 200" class="water-ring">
+          <circle cx="100" cy="100" r="88" class="water-ring-track"/>
+          <circle cx="100" cy="100" r="88" class="water-ring-fill" id="waterRingFill"/>
+        </svg>
+        <div class="water-dial-center">
+          <span class="water-dial-count" id="waterDialCount">0</span>
+          <span class="water-dial-goal">of <span id="waterDialGoal">10</span> glasses</span>
+        </div>
+      </div>
+
+      <div class="water-buttons">
+        <button class="btn-round" id="waterMinus" aria-label="Remove a glass">–</button>
+        <button class="btn-primary btn-water-add" id="waterPlus">+ Add a glass</button>
+        <button class="btn-round" id="waterUndo" aria-label="Undo last">↺</button>
+      </div>
+
+      <div class="glass-grid" id="glassGrid"></div>
+    </section>
+
+    <!-- ============ PROGRESS ============ -->
+    <section class="screen" id="screen-progress">
+      <h2 class="screen-title">Weight progress</h2>
+      <p class="screen-sub">Weigh in first thing in the morning, same conditions each time.</p>
+
+      <form class="log-form log-form-inline" id="weightForm">
+        <input type="number" id="weightInput" placeholder="Today's weight (kg)" step="0.1" min="20" max="200" required>
+        <button type="submit" class="btn-primary">Log weight</button>
+      </form>
+
+      <div class="chart-card">
+        <svg viewBox="0 0 320 160" class="weight-chart" id="weightChart"></svg>
+      </div>
+
+      <div class="progress-summary" id="progressSummary"></div>
+
+      <ul class="entry-list" id="weightEntryList"></ul>
+    </section>
+
+  </main>
+
+  <nav class="bottomnav">
+    <button class="nav-item active" data-screen="dashboard">
+      <span class="nav-icon">●</span><span>Home</span>
+    </button>
+    <button class="nav-item" data-screen="food">
+      <span class="nav-icon">▲</span><span>Food</span>
+    </button>
+    <button class="nav-item" data-screen="water">
+      <span class="nav-icon">■</span><span>Water</span>
+    </button>
+    <button class="nav-item" data-screen="progress">
+      <span class="nav-icon">◆</span><span>Progress</span>
+    </button>
+  </nav>
+
+</div>
+
+<!-- ============ EDIT PROFILE MODAL ============ -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h3>Edit your profile</h3>
+    <form id="profileForm">
+      <label>Name
+        <input type="text" id="pName" required>
+      </label>
+      <label>Age
+        <input type="number" id="pAge" min="10" max="100" required>
+      </label>
+      <label>Height (cm)
+        <input type="number" id="pHeight" min="100" max="230" required>
+      </label>
+      <label>Current weight (kg)
+        <input type="number" id="pWeight" step="0.1" min="20" max="200" required>
+      </label>
+      <label>Target weight (kg)
+        <input type="number" id="pTarget" step="0.1" min="20" max="200" required>
+      </label>
+      <label>Activity level
+        <select id="pActivity">
+          <option value="1.2">Sedentary — desk job, little exercise</option>
+          <option value="1.375" selected>Light — a few gym sessions a week</option>
+          <option value="1.55">Moderate — training most days</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="cancelProfileBtn">Cancel</button>
+        <button type="submit" class="btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
