@@ -1,6 +1,13 @@
 (() => {
   "use strict";
 
+  /* ============ Offline support (PWA) ============ */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => { /* offline caching unavailable, app still works online */ });
+    });
+  }
+
   /* ============ IST-aware date helpers ============ */
   // Returns a Date object whose get*() components equal IST wall-clock time,
   // regardless of the device's actual timezone.
@@ -91,14 +98,31 @@
   }
 
   /* ============ Live clocks (IST + Bengaluru — same zone) ============ */
+  function setHands(prefix, h, m, s) {
+    const hourDeg = (h % 12) * 30 + m * 0.5;
+    const minDeg = m * 6 + s * 0.1;
+    const secDeg = s * 6;
+    const hourEl = document.getElementById(`hour${prefix}`);
+    const minEl = document.getElementById(`min${prefix}`);
+    const secEl = document.getElementById(`sec${prefix}`);
+    if (hourEl) hourEl.style.transform = `rotate(${hourDeg}deg)`;
+    if (minEl) minEl.style.transform = `rotate(${minDeg}deg)`;
+    if (secEl) secEl.style.transform = `rotate(${secDeg}deg)`;
+  }
+
   function renderClocks() {
     const ist = getISTNow();
+    const h = ist.getHours(), m = ist.getMinutes(), s = ist.getSeconds();
     const timeStr = ist.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
     const dateStr = ist.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+
     document.getElementById("clockIST").textContent = timeStr;
     document.getElementById("clockISTDate").textContent = dateStr;
     document.getElementById("clockBLR").textContent = timeStr;
     document.getElementById("clockBLRDate").textContent = dateStr;
+
+    setHands("IST", h, m, s);
+    setHands("BLR", h, m, s);
   }
   renderClocks();
   setInterval(renderClocks, 1000);

@@ -6,7 +6,7 @@ No build step, no backend, no signup — pure HTML/CSS/JS. Your data is saved lo
 
 ## Features
 
-- **Live clock** — IST and Bengaluru time side by side (Bengaluru runs on IST, so they always match — that's expected, not a bug).
+- **Live analog clocks** — real clock faces (not just digital text) for IST and Bengaluru, ticking every second, plus a digital readout underneath. Bengaluru runs on IST, so they always match — that's expected, not a bug.
 - **Bengaluru sun timings** — today's sunrise, sunset, and total daylight, computed client-side with an astronomical formula (no API key or internet call needed) for Bengaluru's coordinates.
 - **Dashboard** — BMI, calories, protein, carbs, water, and sleep progress at a glance, all calculated live from your profile.
 - **Food tracker** — log meals with calories, protein, and carbs; daily calorie goal is auto-calculated from a surplus over your estimated maintenance calories (Mifflin-St Jeor formula), with a carbs goal at ~4g/kg bodyweight.
@@ -14,32 +14,34 @@ No build step, no backend, no signup — pure HTML/CSS/JS. Your data is saved lo
 - **Sleep tracker** — log bedtime and wake time, see hours slept vs. your sleep goal, and review recent nights.
 - **Alarms, per tracker** — a meal reminder, a repeating water reminder (every N hours), and bedtime/wake alarms. Alarms ring with an in-app sound + banner and, if you allow it, a browser notification.
 - **Daily reset at 6:00 AM IST** — food, water, and "today's sleep" all roll over to a fresh day at 6 AM India Standard Time specifically (not local midnight), no matter what timezone the device is actually in.
+- **Works offline** — installable as a PWA (Progressive Web App) with a service worker, so once you've opened it online once, it keeps working with no internet connection.
 - **Editable profile** — name, age, height, weight, target weight, sleep goal, and activity level; all goals recalculate automatically.
 
 ## Running it locally
 
-No installation needed. Just open `index.html` in any browser:
+**Important:** open this with a local server, not by double-clicking `index.html`. Offline support (the service worker) only works over `http://` or `https://` — browsers block service workers on the `file://` protocol. Everything else (tracking, alarms, clocks) works either way, but for the full offline experience, use a server:
 
 ```bash
 git clone <this-repo-url>
 cd gainline
-open index.html   # macOS
-# or just double-click index.html
-```
-
-For a nicer local dev loop (not required, but avoids any browser file:// quirks):
-
-```bash
 python3 -m http.server 8000
-# visit http://localhost:8000
+# visit http://localhost:8000 in your browser
 ```
+
+## Going fully offline (PWA)
+
+1. Serve the app over `http://` or `https://` (a local server, or once deployed to GitHub Pages).
+2. Open it in a browser at least once while online — this lets the service worker cache all the app files.
+3. After that, the app keeps working with no internet connection at all — reopening the tab, or even opening it in airplane mode, will load the last cached version.
+4. On mobile, most browsers will also offer an "Add to Home Screen" / "Install app" prompt (or one from the browser menu) once the manifest is detected — installing it gives you a standalone app icon and window, same as a native app.
+5. The Google Fonts used for headings require a connection to load initially; offline, the app falls back to your device's default sans-serif font automatically — nothing breaks.
 
 ## Deploying to GitHub Pages
 
 1. Push this folder to a GitHub repository.
 2. Go to **Settings → Pages** in the repo.
 3. Under **Build and deployment**, set **Source** to `Deploy from a branch`, branch `main`, folder `/ (root)`.
-4. Save — your app will be live at `https://<username>.github.io/<repo-name>/` within a minute or two.
+4. Save — your app will be live at `https://<username>.github.io/<repo-name>/` within a minute or two, fully offline-capable per the steps above.
 
 ## How the numbers are calculated
 
@@ -69,9 +71,14 @@ Every tracked day (food, water, sleep) is keyed to a "app day" that starts at **
 
 ```
 gainline/
-├── index.html   # markup for all five screens + profile modal
-├── style.css    # design system and layout
-├── app.js       # all app logic, calculations, alarms, localStorage persistence
+├── index.html      # markup for all five screens + profile modal
+├── style.css       # design system and layout
+├── app.js          # all app logic, calculations, alarms, localStorage persistence
+├── manifest.json   # PWA metadata (name, icons, colors) for installability
+├── sw.js           # service worker — caches app files for offline use
+├── icons/
+│   ├── icon-192.png
+│   └── icon-512.png
 └── README.md
 ```
 

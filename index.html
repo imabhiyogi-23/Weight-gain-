@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#15141c">
+<meta name="description" content="GAINLINE — a weight gain, food, water and sleep tracker.">
 <title>GAINLINE — Abhishek's Bulk Up Plan</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -51,12 +56,38 @@
 
       <div class="clock-row">
         <div class="clock-card">
-          <p class="clock-label">IST — India Standard Time</p>
+          <p class="clock-label">IST</p>
+          <svg viewBox="0 0 100 100" class="clock-face" id="clockFaceIST">
+            <circle cx="50" cy="50" r="46" class="clock-face-ring"/>
+            <g class="clock-ticks">
+              <line x1="50" y1="7" x2="50" y2="13"/><line x1="50" y1="87" x2="50" y2="93"/>
+              <line x1="7" y1="50" x2="13" y2="50"/><line x1="87" y1="50" x2="93" y2="50"/>
+              <line x1="20.7" y1="20.7" x2="24.9" y2="24.9"/><line x1="75.1" y1="75.1" x2="79.3" y2="79.3"/>
+              <line x1="79.3" y1="20.7" x2="75.1" y2="24.9"/><line x1="24.9" y1="75.1" x2="20.7" y2="79.3"/>
+            </g>
+            <line x1="50" y1="50" x2="50" y2="27" class="clock-hand clock-hand-hour" id="hourIST"/>
+            <line x1="50" y1="50" x2="50" y2="16" class="clock-hand clock-hand-min" id="minIST"/>
+            <line x1="50" y1="50" x2="50" y2="14" class="clock-hand clock-hand-sec" id="secIST"/>
+            <circle cx="50" cy="50" r="3" class="clock-center"/>
+          </svg>
           <p class="clock-value" id="clockIST">--:--:--</p>
           <p class="clock-date" id="clockISTDate">—</p>
         </div>
         <div class="clock-card">
           <p class="clock-label">Bengaluru</p>
+          <svg viewBox="0 0 100 100" class="clock-face" id="clockFaceBLR">
+            <circle cx="50" cy="50" r="46" class="clock-face-ring"/>
+            <g class="clock-ticks">
+              <line x1="50" y1="7" x2="50" y2="13"/><line x1="50" y1="87" x2="50" y2="93"/>
+              <line x1="7" y1="50" x2="13" y2="50"/><line x1="87" y1="50" x2="93" y2="50"/>
+              <line x1="20.7" y1="20.7" x2="24.9" y2="24.9"/><line x1="75.1" y1="75.1" x2="79.3" y2="79.3"/>
+              <line x1="79.3" y1="20.7" x2="75.1" y2="24.9"/><line x1="24.9" y1="75.1" x2="20.7" y2="79.3"/>
+            </g>
+            <line x1="50" y1="50" x2="50" y2="27" class="clock-hand clock-hand-hour" id="hourBLR"/>
+            <line x1="50" y1="50" x2="50" y2="16" class="clock-hand clock-hand-min" id="minBLR"/>
+            <line x1="50" y1="50" x2="50" y2="14" class="clock-hand clock-hand-sec" id="secBLR"/>
+            <circle cx="50" cy="50" r="3" class="clock-center"/>
+          </svg>
           <p class="clock-value" id="clockBLR">--:--:--</p>
           <p class="clock-date" id="clockBLRDate">—</p>
         </div>
@@ -65,12 +96,25 @@
 
       <div class="sun-row">
         <div class="sun-card">
-          <p class="sun-icon">☀</p>
+          <svg viewBox="0 0 24 24" class="sun-icon-svg sun-icon-rise" aria-hidden="true">
+            <circle cx="12" cy="14" r="5"/>
+            <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="20" x2="12" y2="23"/>
+            <line x1="3.5" y1="14" x2="6.5" y2="14"/><line x1="17.5" y1="14" x2="20.5" y2="14"/>
+            <line x1="5.6" y1="7.6" x2="7.7" y2="9.7"/><line x1="16.3" y1="18.3" x2="18.4" y2="20.4"/>
+            <line x1="18.4" y1="7.6" x2="16.3" y2="9.7"/><line x1="7.7" y1="18.3" x2="5.6" y2="20.4"/>
+          </svg>
           <p class="sun-label">Sunrise · Bengaluru</p>
           <p class="sun-value" id="sunriseValue">--:--</p>
         </div>
         <div class="sun-card">
-          <p class="sun-icon">🌇</p>
+          <svg viewBox="0 0 24 24" class="sun-icon-svg sun-icon-set" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="4"/>
+            <line x1="3.5" y1="12" x2="6.5" y2="12"/><line x1="17.5" y1="12" x2="20.5" y2="12"/>
+            <line x1="5.6" y1="5.6" x2="7.7" y2="7.7"/><line x1="16.3" y1="16.3" x2="18.4" y2="18.4"/>
+            <line x1="18.4" y1="5.6" x2="16.3" y2="7.7"/><line x1="7.7" y1="16.3" x2="5.6" y2="18.4"/>
+            <line x1="4" y1="21" x2="20" y2="21"/>
+          </svg>
           <p class="sun-label">Sunset · Bengaluru</p>
           <p class="sun-value" id="sunsetValue">--:--</p>
         </div>
@@ -282,19 +326,24 @@
 
   <nav class="bottomnav">
     <button class="nav-item active" data-screen="dashboard">
-      <span class="nav-icon">●</span><span>Home</span>
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg>
+      <span>Home</span>
     </button>
     <button class="nav-item" data-screen="food">
-      <span class="nav-icon">▲</span><span>Food</span>
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M6 3v7a2 2 0 0 0 2 2v9M6 3v7M9 3v7M6 10h3M17 3c-1.7 0-3 2-3 5s1.3 5 3 5v8"/></svg>
+      <span>Food</span>
     </button>
     <button class="nav-item" data-screen="water">
-      <span class="nav-icon">■</span><span>Water</span>
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 3S5 11 5 15.5A7 7 0 0 0 19 15.5C19 11 12 3 12 3Z"/></svg>
+      <span>Water</span>
     </button>
     <button class="nav-item" data-screen="sleep">
-      <span class="nav-icon">☾</span><span>Sleep</span>
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>
+      <span>Sleep</span>
     </button>
     <button class="nav-item" data-screen="progress">
-      <span class="nav-icon">◆</span><span>Progress</span>
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      <span>Progress</span>
     </button>
   </nav>
 
