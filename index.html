@@ -94,32 +94,37 @@
       </div>
       <p class="clock-note">Bengaluru runs on IST — no time difference, both clocks stay in sync.</p>
 
-      <div class="sun-row">
-        <div class="sun-card">
-          <svg viewBox="0 0 24 24" class="sun-icon-svg sun-icon-rise" aria-hidden="true">
-            <circle cx="12" cy="14" r="5"/>
-            <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="20" x2="12" y2="23"/>
-            <line x1="3.5" y1="14" x2="6.5" y2="14"/><line x1="17.5" y1="14" x2="20.5" y2="14"/>
-            <line x1="5.6" y1="7.6" x2="7.7" y2="9.7"/><line x1="16.3" y1="18.3" x2="18.4" y2="20.4"/>
-            <line x1="18.4" y1="7.6" x2="16.3" y2="9.7"/><line x1="7.7" y1="18.3" x2="5.6" y2="20.4"/>
-          </svg>
-          <p class="sun-label">Sunrise · Bengaluru</p>
-          <p class="sun-value" id="sunriseValue">--:--</p>
+      <div class="card solar-card">
+        <p class="card-label">Bengaluru solar timings</p>
+        <div class="solar-timeline" id="solarTimeline">
+          <div class="solar-item">
+            <svg class="solar-item-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/></svg>
+            <span class="solar-item-label">Dawn</span>
+            <span class="solar-item-time" id="dawnValue">--:--</span>
+          </div>
+          <div class="solar-item">
+            <svg class="solar-item-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="3.5" y1="14" x2="6.5" y2="14"/><line x1="17.5" y1="14" x2="20.5" y2="14"/><line x1="5.6" y1="7.6" x2="7.7" y2="9.7"/><line x1="16.3" y1="18.3" x2="18.4" y2="20.4"/><line x1="18.4" y1="7.6" x2="16.3" y2="9.7"/><line x1="7.7" y1="18.3" x2="5.6" y2="20.4"/></svg>
+            <span class="solar-item-label">Sunrise</span>
+            <span class="solar-item-time" id="sunriseValue">--:--</span>
+          </div>
+          <div class="solar-item">
+            <svg class="solar-item-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="3.5" y1="12" x2="6.5" y2="12"/><line x1="17.5" y1="12" x2="20.5" y2="12"/><line x1="5.6" y1="5.6" x2="7.7" y2="7.7"/><line x1="16.3" y1="16.3" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.3" y2="7.7"/><line x1="7.7" y1="16.3" x2="5.6" y2="18.4"/></svg>
+            <span class="solar-item-label">Solar noon</span>
+            <span class="solar-item-time" id="solarNoonValue">--:--</span>
+          </div>
+          <div class="solar-item">
+            <svg class="solar-item-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="3.5" y1="12" x2="6.5" y2="12"/><line x1="17.5" y1="12" x2="20.5" y2="12"/><line x1="5.6" y1="5.6" x2="7.7" y2="7.7"/><line x1="16.3" y1="16.3" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.3" y2="7.7"/><line x1="7.7" y1="16.3" x2="5.6" y2="18.4"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+            <span class="solar-item-label">Sunset</span>
+            <span class="solar-item-time" id="sunsetValue">--:--</span>
+          </div>
+          <div class="solar-item">
+            <svg class="solar-item-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+            <span class="solar-item-label">Dusk</span>
+            <span class="solar-item-time" id="duskValue">--:--</span>
+          </div>
         </div>
-        <div class="sun-card">
-          <svg viewBox="0 0 24 24" class="sun-icon-svg sun-icon-set" aria-hidden="true">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="4"/>
-            <line x1="3.5" y1="12" x2="6.5" y2="12"/><line x1="17.5" y1="12" x2="20.5" y2="12"/>
-            <line x1="5.6" y1="5.6" x2="7.7" y2="7.7"/><line x1="16.3" y1="16.3" x2="18.4" y2="18.4"/>
-            <line x1="18.4" y1="5.6" x2="16.3" y2="7.7"/><line x1="7.7" y1="16.3" x2="5.6" y2="18.4"/>
-            <line x1="4" y1="21" x2="20" y2="21"/>
-          </svg>
-          <p class="sun-label">Sunset · Bengaluru</p>
-          <p class="sun-value" id="sunsetValue">--:--</p>
-        </div>
+        <p class="card-sub">Daylight today: <span id="daylightLength">--</span></p>
       </div>
-      <p class="clock-note">Daylight today: <span id="daylightLength">--</span></p>
 
       <div class="card-grid">
 
@@ -159,6 +164,15 @@
           <p class="card-sub">Your main fuel for the extra calories to actually get eaten.</p>
         </div>
 
+        <div class="card card-fats">
+          <p class="card-label">Fats today</p>
+          <p class="card-big"><span id="fatsEatenToday">0</span><span class="card-big-of">/<span id="fatsGoalDisplay">70</span>g</span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-orange" id="fatsProgressFill"></div>
+          </div>
+          <p class="card-sub">Calorie-dense — a spoon of ghee or nuts adds up fast.</p>
+        </div>
+
         <div class="card card-water">
           <p class="card-label">Water today</p>
           <p class="card-big"><span id="waterCountToday">0</span><span class="card-big-of">/<span id="waterGoalDisplay">10</span> glasses</span></p>
@@ -190,12 +204,24 @@
       <h2 class="screen-title">Food tracker</h2>
       <p class="screen-sub">Log every meal and snack — surplus adds up in small bites.</p>
 
+      <div class="date-nav">
+        <button class="date-nav-arrow" id="foodPrevDay" aria-label="Previous day">‹</button>
+        <div class="date-nav-center">
+          <span class="date-nav-label" id="foodDateLabel">Today</span>
+          <button class="date-nav-today" id="foodJumpToday">Jump to today</button>
+        </div>
+        <button class="date-nav-arrow" id="foodNextDay" aria-label="Next day">›</button>
+      </div>
+
       <form class="log-form" id="foodForm">
         <input type="text" id="foodName" placeholder="What did you eat?" required maxlength="60">
         <div class="log-form-row">
           <input type="number" id="foodCalories" placeholder="Calories" min="0" required>
           <input type="number" id="foodProtein" placeholder="Protein (g)" min="0">
+        </div>
+        <div class="log-form-row">
           <input type="number" id="foodCarbs" placeholder="Carbs (g)" min="0">
+          <input type="number" id="foodFats" placeholder="Fats (g)" min="0">
         </div>
         <button type="submit" class="btn-primary">Add to today's log</button>
       </form>
@@ -203,7 +229,7 @@
       <div class="progress-track big-track">
         <div class="progress-fill fill-coral" id="foodScreenProgressFill"></div>
       </div>
-      <p class="screen-progress-label"><span id="foodScreenEaten">0</span> of <span id="foodScreenGoal">2300</span> kcal · <span id="foodScreenProtein">0</span>g protein · <span id="foodScreenCarbs">0</span>g carbs</p>
+      <p class="screen-progress-label"><span id="foodScreenEaten">0</span> of <span id="foodScreenGoal">2300</span> kcal · <span id="foodScreenProtein">0</span>g protein · <span id="foodScreenCarbs">0</span>g carbs · <span id="foodScreenFats">0</span>g fats</p>
 
       <ul class="entry-list" id="foodEntryList">
         <li class="empty-state">Nothing logged yet today. Add your first meal above.</li>
@@ -226,6 +252,15 @@
     <section class="screen" id="screen-water">
       <h2 class="screen-title">Water tracker</h2>
       <p class="screen-sub">One glass = 250 ml. Tap to log as you drink.</p>
+
+      <div class="date-nav">
+        <button class="date-nav-arrow" id="waterPrevDay" aria-label="Previous day">‹</button>
+        <div class="date-nav-center">
+          <span class="date-nav-label" id="waterDateLabel">Today</span>
+          <button class="date-nav-today" id="waterJumpToday">Jump to today</button>
+        </div>
+        <button class="date-nav-arrow" id="waterNextDay" aria-label="Next day">›</button>
+      </div>
 
       <div class="water-dial">
         <svg viewBox="0 0 200 200" class="water-ring">
@@ -267,6 +302,15 @@
       <h2 class="screen-title">Sleep tracker</h2>
       <p class="screen-sub">Log last night's sleep — recovery drives appetite and growth.</p>
 
+      <div class="date-nav">
+        <button class="date-nav-arrow" id="sleepPrevDay" aria-label="Previous day">‹</button>
+        <div class="date-nav-center">
+          <span class="date-nav-label" id="sleepDateLabel">Today</span>
+          <button class="date-nav-today" id="sleepJumpToday">Jump to today</button>
+        </div>
+        <button class="date-nav-arrow" id="sleepNextDay" aria-label="Next day">›</button>
+      </div>
+
       <form class="log-form log-form-inline" id="sleepForm">
         <input type="time" id="sleepBedtime" required>
         <input type="time" id="sleepWaketime" required>
@@ -276,7 +320,7 @@
       <div class="progress-track big-track">
         <div class="progress-fill fill-purple" id="sleepScreenProgressFill"></div>
       </div>
-      <p class="screen-progress-label"><span id="sleepScreenHours">0.0</span>h of <span id="sleepScreenGoal">8</span>h goal — last night</p>
+      <p class="screen-progress-label"><span id="sleepScreenHours">0.0</span>h of <span id="sleepScreenGoal">8</span>h goal — <span id="sleepScreenDayLabel">last night</span></p>
 
       <ul class="entry-list" id="sleepEntryList"></ul>
 

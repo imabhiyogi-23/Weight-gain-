@@ -7,11 +7,12 @@ No build step, no backend, no signup — pure HTML/CSS/JS. Your data is saved lo
 ## Features
 
 - **Live analog clocks** — real clock faces (not just digital text) for IST and Bengaluru, ticking every second, plus a digital readout underneath. Bengaluru runs on IST, so they always match — that's expected, not a bug.
-- **Bengaluru sun timings** — today's sunrise, sunset, and total daylight, computed client-side with an astronomical formula (no API key or internet call needed) for Bengaluru's coordinates.
-- **Dashboard** — BMI, calories, protein, carbs, water, and sleep progress at a glance, all calculated live from your profile.
-- **Food tracker** — log meals with calories, protein, and carbs; daily calorie goal is auto-calculated from a surplus over your estimated maintenance calories (Mifflin-St Jeor formula), with a carbs goal at ~4g/kg bodyweight.
+- **Bengaluru solar timings** — civil dawn, sunrise, solar noon, sunset, and civil dusk, plus total daylight, all computed client-side with an astronomical formula (no API key or internet call needed) for Bengaluru's coordinates.
+- **Dashboard** — BMI, calories, protein, carbs, fats, water, and sleep progress at a glance, all calculated live from your profile.
+- **Food tracker** — log meals with calories, protein, carbs, and fats; the calorie goal is auto-calculated from a surplus over your estimated maintenance calories (Mifflin-St Jeor formula), with carb and fat goals splitting the remaining calories after protein (60/40 toward carbs, since they're the easiest way to eat through a surplus).
 - **Water tracker** — a tap-to-log glass counter (250 ml/glass) with a visual ring, aimed at a 10-glass (~2.5 L) daily goal.
 - **Sleep tracker** — log bedtime and wake time, see hours slept vs. your sleep goal, and review recent nights.
+- **Browse any day** — Food, Water, and Sleep screens all have a day switcher (‹ Today ›) so you can look back at (or fill in) any previous day's log, not just today's. Browsing is shared across all three trackers, so flipping to "Yesterday" on Food keeps Water and Sleep on the same day too.
 - **Alarms, per tracker** — a meal reminder, a repeating water reminder (every N hours), and bedtime/wake alarms. Alarms ring with an in-app sound + banner and, if you allow it, a browser notification.
 - **Daily reset at 6:00 AM IST** — food, water, and "today's sleep" all roll over to a fresh day at 6 AM India Standard Time specifically (not local midnight), no matter what timezone the device is actually in.
 - **Works offline** — installable as a PWA (Progressive Web App) with a service worker, so once you've opened it online once, it keeps working with no internet connection.
@@ -49,7 +50,7 @@ python3 -m http.server 8000
 - **Maintenance calories (TDEE)** = Mifflin-St Jeor BMR × activity multiplier.
 - **Calorie goal** = TDEE + 500 kcal/day surplus (a moderate, sustainable pace for weight gain).
 - **Protein goal** = 1.8 g × current body weight (kg).
-- **Carbs goal** = 4 g × current body weight (kg) — enough fuel to actually eat through the surplus.
+- **Carbs / fat goals** = whatever calories remain after protein, split 60% to carbs and 40% to fat — carbs prioritized since they're the easiest way to actually eat through a surplus.
 - **Water goal** = 10 glasses (250 ml each ≈ 2.5 L/day).
 - **Sleep goal** = set per-profile (default 8 hours).
 

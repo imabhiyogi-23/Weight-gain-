@@ -564,14 +564,73 @@ input,select{font-family:inherit;}
 .clock-hand-sec{stroke:var(--coral);stroke-width:1.4;}
 .clock-center{fill:var(--coral);}
 
-/* ===== Sun icons (SVG) ===== */
-.sun-icon-svg{
-  width:26px;height:26px;
-  margin:0 auto 6px;
-  display:block;
-  fill:none;
-  stroke-width:1.8;
-  stroke-linecap:round;
+/* ===== Solar timings ===== */
+.solar-card{
+  margin-top:12px;
+  grid-column:1 / -1;
 }
-.sun-icon-rise{stroke:#ffb020;}
-.sun-icon-set{stroke:#ff8a4d;}
+.solar-timeline{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(64px, 1fr));
+  gap:10px;
+  margin-top:8px;
+}
+.solar-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  padding:10px 6px;
+}
+.solar-item-icon{width:20px;height:20px;fill:none;stroke-width:1.8;stroke-linecap:round;stroke:#ffb020;}
+.solar-item:nth-child(1) .solar-item-icon,
+.solar-item:nth-child(5) .solar-item-icon{stroke:#8b5cf6;}
+.solar-item:nth-child(4) .solar-item-icon{stroke:#ff8a4d;}
+.solar-item-label{font-size:.62rem;color:var(--ink-soft);font-weight:600;text-transform:uppercase;letter-spacing:.02em;text-align:center;}
+.solar-item-time{font-family:'Sora',sans-serif;font-size:.85rem;font-weight:800;color:var(--ink);}
+.fill-orange{background:#ff9640;}
+
+/* ===== Date navigator (browse any day) ===== */
+.date-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:8px 10px;
+  margin-bottom:16px;
+}
+.date-nav-arrow{
+  width:34px;height:34px;flex:none;
+  border-radius:50%;
+  border:none;
+  background:var(--paper);
+  color:var(--ink);
+  font-size:1.1rem;
+  font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.date-nav-arrow:disabled{opacity:.35;}
+.date-nav-center{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+}
+.date-nav-label{font-size:.85rem;font-weight:700;color:var(--ink);}
+.date-nav-today{
+  background:none;
+  border:none;
+  color:var(--coral);
+  font-size:.68rem;
+  font-weight:700;
+  padding:0;
+  display:none;
+}
+.date-nav-today.show{display:inline;}

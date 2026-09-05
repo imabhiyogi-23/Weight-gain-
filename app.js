@@ -92,9 +92,16 @@
     const tdee = bmr * Number(p.activity);
     const calorieGoal = Math.round((tdee + 500) / 10) * 10;
     const proteinGoal = Math.round(p.weight * 1.8);
-    const carbsGoal = Math.round(p.weight * 4); // moderate-high carb intake to fuel the surplus
 
-    return { bmi, bmiCategory, bmr, tdee, calorieGoal, proteinGoal, carbsGoal };
+    // Split the remaining calories (after protein) mostly toward carbs, since
+    // carbs are the easiest way to actually eat through a surplus, with the
+    // rest going to fats.
+    const proteinCals = proteinGoal * 4;
+    const remainingCals = Math.max(0, calorieGoal - proteinCals);
+    const carbsGoal = Math.round((remainingCals * 0.6) / 4);
+    const fatsGoal = Math.round((remainingCals * 0.4) / 9);
+
+    return { bmi, bmiCategory, bmr, tdee, calorieGoal, proteinGoal, carbsGoal, fatsGoal };
   }
 
   /* ============ Live clocks (IST + Bengaluru — same zone) ============ */
@@ -127,12 +134,12 @@
   renderClocks();
   setInterval(renderClocks, 1000);
 
-  /* ============ Bengaluru sunrise / sunset ============ */
+  /* ============ Bengaluru solar timings ============ */
   // General-purpose sunrise equation (astronomical, computed client-side —
   // no API needed). Accurate to within about a minute.
   const BLR_LAT = 12.9716, BLR_LON = 77.5946;
 
-  function calcSunTimes(year, month, day, lat, lon) {
+  function sunAngleTimes(year, month, day, lat, lon, angleDeg) {
     const toRad = (d) => (d * Math.PI) / 180;
     const toDeg = (r) => (r * 180) / Math.PI;
 
@@ -160,27 +167,34 @@
     const sinDelta = Math.sin(lambdaRad) * Math.sin(toRad(23.4397));
     const cosDelta = Math.cos(Math.asin(sinDelta));
     const latRad = toRad(lat);
-    const cosOmega0 = (Math.sin(toRad(-0.833)) - Math.sin(latRad) * sinDelta) / (Math.cos(latRad) * cosDelta);
+    const cosOmega0 = (Math.sin(toRad(-angleDeg)) - Math.sin(latRad) * sinDelta) / (Math.cos(latRad) * cosDelta);
 
-    if (cosOmega0 > 1 || cosOmega0 < -1) return null; // no sunrise/sunset (not applicable near the equator)
+    if (cosOmega0 > 1 || cosOmega0 < -1) return null; // not applicable this close to the equator
     const omega0 = toDeg(Math.acos(cosOmega0));
 
     const jdToDate = (j) => new Date((j - 2440587.5) * 86400000);
     return {
-      sunrise: jdToDate(Jtransit - omega0 / 360),
-      sunset: jdToDate(Jtransit + omega0 / 360)
+      rise: jdToDate(Jtransit - omega0 / 360),
+      set: jdToDate(Jtransit + omega0 / 360),
+      transit: jdToDate(Jtransit)
     };
   }
 
   function renderSunTimes() {
     const ist = getISTNow(); // gives IST calendar date regardless of device timezone
-    const result = calcSunTimes(ist.getFullYear(), ist.getMonth() + 1, ist.getDate(), BLR_LAT, BLR_LON);
-    if (!result) return;
-    const fmt = (d) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
-    document.getElementById("sunriseValue").textContent = fmt(result.sunrise);
-    document.getElementById("sunsetValue").textContent = fmt(result.sunset);
+    const y = ist.getFullYear(), m = ist.getMonth() + 1, d = ist.getDate();
+    const std = sunAngleTimes(y, m, d, BLR_LAT, BLR_LON, 0.833);   // sunrise/sunset
+    const civil = sunAngleTimes(y, m, d, BLR_LAT, BLR_LON, 6);      // civil dawn/dusk
+    if (!std || !civil) return;
 
-    const daylightMs = result.sunset - result.sunrise;
+    const fmt = (d) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
+    document.getElementById("dawnValue").textContent = fmt(civil.rise);
+    document.getElementById("sunriseValue").textContent = fmt(std.rise);
+    document.getElementById("solarNoonValue").textContent = fmt(std.transit);
+    document.getElementById("sunsetValue").textContent = fmt(std.set);
+    document.getElementById("duskValue").textContent = fmt(civil.set);
+
+    const daylightMs = std.set - std.rise;
     const hrs = Math.floor(daylightMs / 3600000);
     const mins = Math.round((daylightMs % 3600000) / 60000);
     document.getElementById("daylightLength").textContent = `${hrs}h ${mins}m`;
@@ -188,7 +202,58 @@
   renderSunTimes();
   setInterval(renderSunTimes, 60 * 60 * 1000); // recompute hourly, rolls to a new day naturally
 
-  /* ============ Navigation ============ */
+  /* ============ Day-to-day browsing state ============ */
+  // Shared across Food, Water and Sleep screens — browsing one moves all three,
+  // so switching tabs keeps looking at the same day.
+  let viewDate = appDayKey();
+
+  function shiftViewDate(deltaDays) {
+    const d = new Date(viewDate + "T00:00:00");
+    d.setDate(d.getDate() + deltaDays);
+    const candidate = fmtDateKey(d);
+    if (candidate > appDayKey()) return; // no browsing into the future
+    viewDate = candidate;
+    renderAll();
+  }
+
+  function jumpToToday() {
+    viewDate = appDayKey();
+    renderAll();
+  }
+
+  function formatDateLabel(dayKey) {
+    const today = appDayKey();
+    const yesterday = fmtDateKey(new Date(new Date(today + "T00:00:00").getTime() - 86400000));
+    if (dayKey === today) return "Today";
+    if (dayKey === yesterday) return "Yesterday";
+    const d = new Date(dayKey + "T00:00:00");
+    return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  }
+
+  function wireDateNav(prefix) {
+    const prevBtn = document.getElementById(`${prefix}PrevDay`);
+    const nextBtn = document.getElementById(`${prefix}NextDay`);
+    const todayBtn = document.getElementById(`${prefix}JumpToday`);
+    if (!prevBtn) return;
+    prevBtn.addEventListener("click", () => shiftViewDate(-1));
+    nextBtn.addEventListener("click", () => shiftViewDate(1));
+    todayBtn.addEventListener("click", jumpToToday);
+  }
+
+  function renderDateNav(prefix) {
+    const label = document.getElementById(`${prefix}DateLabel`);
+    const nextBtn = document.getElementById(`${prefix}NextDay`);
+    const todayBtn = document.getElementById(`${prefix}JumpToday`);
+    if (!label) return;
+    label.textContent = formatDateLabel(viewDate);
+    const isToday = viewDate === appDayKey();
+    nextBtn.disabled = isToday;
+    todayBtn.classList.toggle("show", !isToday);
+  }
+
+  ["food", "water", "sleep"].forEach(wireDateNav);
+
+
   const screens = document.querySelectorAll(".screen");
   const navItems = document.querySelectorAll(".nav-item");
   navItems.forEach((btn) => {
@@ -258,6 +323,7 @@
     const eatenCal = food.reduce((s, f) => s + f.calories, 0);
     const eatenProtein = food.reduce((s, f) => s + (f.protein || 0), 0);
     const eatenCarbs = food.reduce((s, f) => s + (f.carbs || 0), 0);
+    const eatenFats = food.reduce((s, f) => s + (f.fats || 0), 0);
 
     document.getElementById("caloriesEatenToday").textContent = eatenCal;
     document.getElementById("calorieGoalDisplay").textContent = g.calorieGoal;
@@ -273,6 +339,10 @@
     document.getElementById("carbsEatenToday").textContent = eatenCarbs;
     document.getElementById("carbsGoalDisplay").textContent = g.carbsGoal;
     document.getElementById("carbsProgressFill").style.width = Math.min(100, (eatenCarbs / g.carbsGoal) * 100) + "%";
+
+    document.getElementById("fatsEatenToday").textContent = eatenFats;
+    document.getElementById("fatsGoalDisplay").textContent = g.fatsGoal;
+    document.getElementById("fatsProgressFill").style.width = Math.min(100, (eatenFats / g.fatsGoal) * 100) + "%";
 
     document.getElementById("waterCountToday").textContent = water;
     document.getElementById("waterGoalDisplay").textContent = WATER_GOAL_GLASSES;
@@ -308,27 +378,31 @@
   const foodEntryList = document.getElementById("foodEntryList");
 
   function renderFoodList() {
-    const food = load(foodKey(appDayKey()), []);
+    renderDateNav("food");
+    const food = load(foodKey(viewDate), []);
     const g = computeGoals(profile);
     const eatenCal = food.reduce((s, f) => s + f.calories, 0);
     const eatenProtein = food.reduce((s, f) => s + (f.protein || 0), 0);
     const eatenCarbs = food.reduce((s, f) => s + (f.carbs || 0), 0);
+    const eatenFats = food.reduce((s, f) => s + (f.fats || 0), 0);
 
     document.getElementById("foodScreenEaten").textContent = eatenCal;
     document.getElementById("foodScreenGoal").textContent = g.calorieGoal;
     document.getElementById("foodScreenProtein").textContent = eatenProtein;
     document.getElementById("foodScreenCarbs").textContent = eatenCarbs;
+    document.getElementById("foodScreenFats").textContent = eatenFats;
     document.getElementById("foodScreenProgressFill").style.width = Math.min(100, (eatenCal / g.calorieGoal) * 100) + "%";
 
     if (food.length === 0) {
-      foodEntryList.innerHTML = `<li class="empty-state">Nothing logged yet today. Add your first meal above.</li>`;
+      const dayWord = viewDate === appDayKey() ? "today" : "on " + formatDateLabel(viewDate).toLowerCase();
+      foodEntryList.innerHTML = `<li class="empty-state">Nothing logged ${dayWord}. Add a meal above.</li>`;
       return;
     }
     foodEntryList.innerHTML = food.map((f, i) => `
       <li class="entry-row">
         <div>
           <div class="entry-name">${escapeHtml(f.name)}</div>
-          <div class="entry-meta">${f.calories} kcal${f.protein ? " · " + f.protein + "g protein" : ""}${f.carbs ? " · " + f.carbs + "g carbs" : ""}</div>
+          <div class="entry-meta">${f.calories} kcal${f.protein ? " · " + f.protein + "g protein" : ""}${f.carbs ? " · " + f.carbs + "g carbs" : ""}${f.fats ? " · " + f.fats + "g fats" : ""}</div>
         </div>
         <button class="entry-remove" data-index="${i}" aria-label="Remove entry">✕</button>
       </li>
@@ -337,9 +411,9 @@
     foodEntryList.querySelectorAll(".entry-remove").forEach((btn) => {
       btn.addEventListener("click", () => {
         const idx = Number(btn.dataset.index);
-        const list = load(foodKey(appDayKey()), []);
+        const list = load(foodKey(viewDate), []);
         list.splice(idx, 1);
-        save(foodKey(appDayKey()), list);
+        save(foodKey(viewDate), list);
         renderFoodList();
         renderDashboard();
       });
@@ -358,11 +432,12 @@
     const calories = Number(document.getElementById("foodCalories").value);
     const protein = Number(document.getElementById("foodProtein").value) || 0;
     const carbs = Number(document.getElementById("foodCarbs").value) || 0;
+    const fats = Number(document.getElementById("foodFats").value) || 0;
     if (!name || !calories) return;
 
-    const list = load(foodKey(appDayKey()), []);
-    list.push({ name, calories, protein, carbs });
-    save(foodKey(appDayKey()), list);
+    const list = load(foodKey(viewDate), []);
+    list.push({ name, calories, protein, carbs, fats });
+    save(foodKey(viewDate), list);
 
     foodForm.reset();
     renderFoodList();
@@ -373,7 +448,8 @@
   const RING_CIRC = 2 * Math.PI * 88;
 
   function renderWater() {
-    const water = load(waterKey(appDayKey()), 0);
+    renderDateNav("water");
+    const water = load(waterKey(viewDate), 0);
     document.getElementById("waterDialCount").textContent = water;
     document.getElementById("waterDialGoal").textContent = WATER_GOAL_GLASSES;
 
@@ -391,19 +467,19 @@
 
   function setWater(newVal) {
     const val = Math.max(0, newVal);
-    save(waterKey(appDayKey()), val);
+    save(waterKey(viewDate), val);
     renderWater();
     renderDashboard();
   }
 
   document.getElementById("waterPlus").addEventListener("click", () => {
-    setWater(load(waterKey(appDayKey()), 0) + 1);
+    setWater(load(waterKey(viewDate), 0) + 1);
   });
   document.getElementById("waterMinus").addEventListener("click", () => {
-    setWater(load(waterKey(appDayKey()), 0) - 1);
+    setWater(load(waterKey(viewDate), 0) - 1);
   });
   document.getElementById("waterUndo").addEventListener("click", () => {
-    setWater(load(waterKey(appDayKey()), 0) - 1);
+    setWater(load(waterKey(viewDate), 0) - 1);
   });
 
   /* ============ Sleep tracker ============ */
@@ -427,6 +503,10 @@
     return log[log.length - 1];
   }
 
+  function getSleepEntryForDay(day) {
+    return getSleepLog().find((l) => l.day === day) || null;
+  }
+
   sleepForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const bedtime = document.getElementById("sleepBedtime").value;
@@ -435,11 +515,12 @@
     const hours = computeSleepHours(bedtime, waketime);
 
     const log = getSleepLog();
-    const day = appDayKey();
+    const day = viewDate;
     const existingIdx = log.findIndex((l) => l.day === day);
     const entry = { day, bedtime, waketime, hours };
     if (existingIdx >= 0) log[existingIdx] = entry;
     else log.push(entry);
+    log.sort((a, b) => a.day.localeCompare(b.day));
     save(K_SLEEPLOG, log);
 
     sleepForm.reset();
@@ -448,11 +529,16 @@
   });
 
   function renderSleep() {
-    const last = getLastSleepEntry();
-    const hours = last ? last.hours : 0;
+    renderDateNav("sleep");
+    const entry = getSleepEntryForDay(viewDate);
+    const hours = entry ? entry.hours : 0;
     document.getElementById("sleepScreenHours").textContent = hours.toFixed(1);
     document.getElementById("sleepScreenGoal").textContent = profile.sleepGoal;
     document.getElementById("sleepScreenProgressFill").style.width = Math.min(100, (hours / profile.sleepGoal) * 100) + "%";
+    document.getElementById("sleepBedtime").value = entry ? entry.bedtime : "";
+    document.getElementById("sleepWaketime").value = entry ? entry.waketime : "";
+    document.getElementById("sleepScreenDayLabel").textContent =
+      viewDate === appDayKey() ? "last night" : "night of " + formatDateLabel(viewDate).toLowerCase();
 
     const log = getSleepLog().slice().reverse().slice(0, 14);
     if (log.length === 0) {
