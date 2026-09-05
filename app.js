@@ -1,14 +1,39 @@
 (() => {
   "use strict";
 
+  /* ============ IST-aware date helpers ============ */
+  // Returns a Date object whose get*() components equal IST wall-clock time,
+  // regardless of the device's actual timezone.
+  function getISTNow() {
+    const now = new Date();
+    const istString = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    return new Date(istString);
+  }
+
+  function fmtDateKey(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  // The "app day" rolls over at 6:00 AM IST, not midnight — so all trackers
+  // reset fresh every morning at 6 IST, wherever the device actually is.
+  function appDayKey() {
+    const ist = getISTNow();
+    const anchor = new Date(ist);
+    if (ist.getHours() < 6) anchor.setDate(anchor.getDate() - 1);
+    return fmtDateKey(anchor);
+  }
+
   /* ============ Storage keys & helpers ============ */
   const K_PROFILE = "gainline_profile";
   const K_START = "gainline_start_date";
   const K_WEIGHTLOG = "gainline_weight_log";
+  const K_SLEEPLOG = "gainline_sleep_log";
+  const K_ALARMS = "gainline_alarms";
   const foodKey = (d) => `gainline_food_${d}`;
   const waterKey = (d) => `gainline_water_${d}`;
-
-  const todayStr = () => new Date().toISOString().slice(0, 10);
 
   const load = (key, fallback) => {
     try {
@@ -26,34 +51,118 @@
     height: 158,
     weight: 37,
     target: 55,
-    activity: 1.375
+    activity: 1.375,
+    sleepGoal: 8
+  };
+
+  const DEFAULT_ALARMS = {
+    food: { enabled: false, time: "13:00" },
+    water: { enabled: false, intervalHours: 2, lastFiredAt: null },
+    bedtime: { enabled: false, time: "22:30" },
+    wake: { enabled: false, time: "06:30" }
   };
 
   const WATER_GOAL_GLASSES = 10; // ~2500ml, standard daily hydration target
   const GLASS_ML = 250;
 
-  let profile = load(K_PROFILE, DEFAULT_PROFILE);
-  if (!load(K_START, null)) save(K_START, todayStr());
+  let profile = { ...DEFAULT_PROFILE, ...load(K_PROFILE, {}) };
+  let alarms = { ...DEFAULT_ALARMS, ...load(K_ALARMS, {}) };
+  if (!load(K_START, null)) save(K_START, appDayKey());
 
   /* ============ Derived goals ============ */
   function computeGoals(p) {
     const heightM = p.height / 100;
     const bmi = p.weight / (heightM * heightM);
 
-    let bmiCategory, bmiColorNote;
-    if (bmi < 18.5) { bmiCategory = "Underweight — building a surplus will help"; }
-    else if (bmi < 25) { bmiCategory = "Healthy range — keep building steadily"; }
-    else if (bmi < 30) { bmiCategory = "Overweight range"; }
-    else { bmiCategory = "Obese range"; }
+    let bmiCategory;
+    if (bmi < 18.5) bmiCategory = "Underweight — building a surplus will help";
+    else if (bmi < 25) bmiCategory = "Healthy range — keep building steadily";
+    else if (bmi < 30) bmiCategory = "Overweight range";
+    else bmiCategory = "Obese range";
 
     // Mifflin-St Jeor (male assumption, adjust if needed)
     const bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + 5;
     const tdee = bmr * Number(p.activity);
     const calorieGoal = Math.round((tdee + 500) / 10) * 10;
     const proteinGoal = Math.round(p.weight * 1.8);
+    const carbsGoal = Math.round(p.weight * 4); // moderate-high carb intake to fuel the surplus
 
-    return { bmi, bmiCategory, bmr, tdee, calorieGoal, proteinGoal };
+    return { bmi, bmiCategory, bmr, tdee, calorieGoal, proteinGoal, carbsGoal };
   }
+
+  /* ============ Live clocks (IST + Bengaluru — same zone) ============ */
+  function renderClocks() {
+    const ist = getISTNow();
+    const timeStr = ist.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+    const dateStr = ist.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+    document.getElementById("clockIST").textContent = timeStr;
+    document.getElementById("clockISTDate").textContent = dateStr;
+    document.getElementById("clockBLR").textContent = timeStr;
+    document.getElementById("clockBLRDate").textContent = dateStr;
+  }
+  renderClocks();
+  setInterval(renderClocks, 1000);
+
+  /* ============ Bengaluru sunrise / sunset ============ */
+  // General-purpose sunrise equation (astronomical, computed client-side —
+  // no API needed). Accurate to within about a minute.
+  const BLR_LAT = 12.9716, BLR_LON = 77.5946;
+
+  function calcSunTimes(year, month, day, lat, lon) {
+    const toRad = (d) => (d * Math.PI) / 180;
+    const toDeg = (r) => (r * 180) / Math.PI;
+
+    // Julian Day Number (Fliegel & Van Flandern algorithm)
+    const a = Math.floor((14 - month) / 12);
+    const y = year + 4800 - a;
+    const m = month + 12 * a - 3;
+    const jdn = day + Math.floor((153 * m + 2) / 5) + 365 * y +
+      Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+
+    const n = jdn - 2451545;
+    const Jstar = n - lon / 360;
+
+    let M = (357.5291 + 0.98560028 * Jstar) % 360;
+    if (M < 0) M += 360;
+    const Mrad = toRad(M);
+
+    const C = 1.9148 * Math.sin(Mrad) + 0.02 * Math.sin(2 * Mrad) + 0.0003 * Math.sin(3 * Mrad);
+    let lambda = (M + 102.9372 + C + 180) % 360;
+    if (lambda < 0) lambda += 360;
+    const lambdaRad = toRad(lambda);
+
+    const Jtransit = 2451545 + Jstar + 0.0053 * Math.sin(Mrad) - 0.0069 * Math.sin(2 * lambdaRad);
+
+    const sinDelta = Math.sin(lambdaRad) * Math.sin(toRad(23.4397));
+    const cosDelta = Math.cos(Math.asin(sinDelta));
+    const latRad = toRad(lat);
+    const cosOmega0 = (Math.sin(toRad(-0.833)) - Math.sin(latRad) * sinDelta) / (Math.cos(latRad) * cosDelta);
+
+    if (cosOmega0 > 1 || cosOmega0 < -1) return null; // no sunrise/sunset (not applicable near the equator)
+    const omega0 = toDeg(Math.acos(cosOmega0));
+
+    const jdToDate = (j) => new Date((j - 2440587.5) * 86400000);
+    return {
+      sunrise: jdToDate(Jtransit - omega0 / 360),
+      sunset: jdToDate(Jtransit + omega0 / 360)
+    };
+  }
+
+  function renderSunTimes() {
+    const ist = getISTNow(); // gives IST calendar date regardless of device timezone
+    const result = calcSunTimes(ist.getFullYear(), ist.getMonth() + 1, ist.getDate(), BLR_LAT, BLR_LON);
+    if (!result) return;
+    const fmt = (d) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
+    document.getElementById("sunriseValue").textContent = fmt(result.sunrise);
+    document.getElementById("sunsetValue").textContent = fmt(result.sunset);
+
+    const daylightMs = result.sunset - result.sunrise;
+    const hrs = Math.floor(daylightMs / 3600000);
+    const mins = Math.round((daylightMs % 3600000) / 60000);
+    document.getElementById("daylightLength").textContent = `${hrs}h ${mins}m`;
+  }
+  renderSunTimes();
+  setInterval(renderSunTimes, 60 * 60 * 1000); // recompute hourly, rolls to a new day naturally
 
   /* ============ Navigation ============ */
   const screens = document.querySelectorAll(".screen");
@@ -77,6 +186,7 @@
     document.getElementById("pHeight").value = profile.height;
     document.getElementById("pWeight").value = profile.weight;
     document.getElementById("pTarget").value = profile.target;
+    document.getElementById("pSleepGoal").value = profile.sleepGoal;
     document.getElementById("pActivity").value = profile.activity;
     modalBackdrop.classList.add("open");
   }
@@ -94,6 +204,7 @@
       height: Number(document.getElementById("pHeight").value),
       weight: Number(document.getElementById("pWeight").value),
       target: Number(document.getElementById("pTarget").value),
+      sleepGoal: Number(document.getElementById("pSleepGoal").value),
       activity: Number(document.getElementById("pActivity").value)
     };
     save(K_PROFILE, profile);
@@ -109,8 +220,8 @@
     document.getElementById("currentWeightHero").textContent = profile.weight.toFixed(1);
     document.getElementById("targetWeightHero").textContent = profile.target.toFixed(1);
 
-    const start = new Date(load(K_START, todayStr()));
-    const diffDays = Math.max(1, Math.floor((new Date(todayStr()) - start) / 86400000) + 1);
+    const startKey = load(K_START, appDayKey());
+    const diffDays = Math.max(1, dayDiff(startKey, appDayKey()) + 1);
     document.getElementById("dayStreak").textContent = diffDays;
 
     document.getElementById("bmiValue").textContent = g.bmi.toFixed(1);
@@ -118,39 +229,54 @@
     const markerPct = Math.min(100, Math.max(0, (g.bmi / 40) * 100));
     document.getElementById("bmiScaleMarker").style.left = markerPct + "%";
 
-    const food = load(foodKey(todayStr()), []);
-    const water = load(waterKey(todayStr()), 0);
+    const food = load(foodKey(appDayKey()), []);
+    const water = load(waterKey(appDayKey()), 0);
     const eatenCal = food.reduce((s, f) => s + f.calories, 0);
     const eatenProtein = food.reduce((s, f) => s + (f.protein || 0), 0);
+    const eatenCarbs = food.reduce((s, f) => s + (f.carbs || 0), 0);
 
     document.getElementById("caloriesEatenToday").textContent = eatenCal;
     document.getElementById("calorieGoalDisplay").textContent = g.calorieGoal;
-    const calPct = Math.min(100, (eatenCal / g.calorieGoal) * 100);
-    document.getElementById("calorieProgressFill").style.width = calPct + "%";
+    document.getElementById("calorieProgressFill").style.width = Math.min(100, (eatenCal / g.calorieGoal) * 100) + "%";
     const calLeft = Math.max(0, g.calorieGoal - eatenCal);
     document.getElementById("calorieRemainingText").textContent =
       calLeft === 0 ? "Surplus target hit for today 🎉" : `${calLeft} kcal left to hit today's surplus`;
 
     document.getElementById("proteinEatenToday").textContent = eatenProtein;
     document.getElementById("proteinGoalDisplay").textContent = g.proteinGoal;
-    document.getElementById("proteinProgressFill").style.width =
-      Math.min(100, (eatenProtein / g.proteinGoal) * 100) + "%";
+    document.getElementById("proteinProgressFill").style.width = Math.min(100, (eatenProtein / g.proteinGoal) * 100) + "%";
+
+    document.getElementById("carbsEatenToday").textContent = eatenCarbs;
+    document.getElementById("carbsGoalDisplay").textContent = g.carbsGoal;
+    document.getElementById("carbsProgressFill").style.width = Math.min(100, (eatenCarbs / g.carbsGoal) * 100) + "%";
 
     document.getElementById("waterCountToday").textContent = water;
     document.getElementById("waterGoalDisplay").textContent = WATER_GOAL_GLASSES;
     document.getElementById("waterMlToday").textContent = water * GLASS_ML;
     document.getElementById("waterGoalMl").textContent = WATER_GOAL_GLASSES * GLASS_ML;
-    document.getElementById("waterProgressFill").style.width =
-      Math.min(100, (water / WATER_GOAL_GLASSES) * 100) + "%";
+    document.getElementById("waterProgressFill").style.width = Math.min(100, (water / WATER_GOAL_GLASSES) * 100) + "%";
+
+    const lastSleep = getLastSleepEntry();
+    const sleepHours = lastSleep ? lastSleep.hours : 0;
+    document.getElementById("sleepHoursToday").textContent = sleepHours.toFixed(1);
+    document.getElementById("sleepGoalDisplay").textContent = profile.sleepGoal;
+    document.getElementById("sleepProgressFill").style.width = Math.min(100, (sleepHours / profile.sleepGoal) * 100) + "%";
 
     const tips = [
       "Small appetite, frequent plate: aim for 5–6 smaller meals instead of 3 big ones today.",
       "Drink your calories too — milk, peanut butter shakes and smoothies go down easier than a full plate.",
       "Keep a glass of water within arm's reach — sipping through the day beats forcing it all at once.",
       "Add a spoon of ghee, peanut butter or olive oil to meals — an easy way to raise calories without more volume.",
-      "Weigh in at the same time each morning for the most consistent progress reading."
+      "Rice, roti, oats and fruit are cheap, easy carbs — don't skip them chasing protein alone.",
+      "A consistent bedtime does as much for your appetite the next day as the food itself."
     ];
     document.getElementById("tipText").textContent = tips[diffDays % tips.length];
+  }
+
+  function dayDiff(dateKeyA, dateKeyB) {
+    const a = new Date(dateKeyA + "T00:00:00");
+    const b = new Date(dateKeyB + "T00:00:00");
+    return Math.round((b - a) / 86400000);
   }
 
   /* ============ Food tracker ============ */
@@ -158,16 +284,17 @@
   const foodEntryList = document.getElementById("foodEntryList");
 
   function renderFoodList() {
-    const food = load(foodKey(todayStr()), []);
+    const food = load(foodKey(appDayKey()), []);
     const g = computeGoals(profile);
     const eatenCal = food.reduce((s, f) => s + f.calories, 0);
     const eatenProtein = food.reduce((s, f) => s + (f.protein || 0), 0);
+    const eatenCarbs = food.reduce((s, f) => s + (f.carbs || 0), 0);
 
     document.getElementById("foodScreenEaten").textContent = eatenCal;
     document.getElementById("foodScreenGoal").textContent = g.calorieGoal;
     document.getElementById("foodScreenProtein").textContent = eatenProtein;
-    document.getElementById("foodScreenProgressFill").style.width =
-      Math.min(100, (eatenCal / g.calorieGoal) * 100) + "%";
+    document.getElementById("foodScreenCarbs").textContent = eatenCarbs;
+    document.getElementById("foodScreenProgressFill").style.width = Math.min(100, (eatenCal / g.calorieGoal) * 100) + "%";
 
     if (food.length === 0) {
       foodEntryList.innerHTML = `<li class="empty-state">Nothing logged yet today. Add your first meal above.</li>`;
@@ -177,7 +304,7 @@
       <li class="entry-row">
         <div>
           <div class="entry-name">${escapeHtml(f.name)}</div>
-          <div class="entry-meta">${f.calories} kcal${f.protein ? " · " + f.protein + "g protein" : ""}</div>
+          <div class="entry-meta">${f.calories} kcal${f.protein ? " · " + f.protein + "g protein" : ""}${f.carbs ? " · " + f.carbs + "g carbs" : ""}</div>
         </div>
         <button class="entry-remove" data-index="${i}" aria-label="Remove entry">✕</button>
       </li>
@@ -186,9 +313,9 @@
     foodEntryList.querySelectorAll(".entry-remove").forEach((btn) => {
       btn.addEventListener("click", () => {
         const idx = Number(btn.dataset.index);
-        const list = load(foodKey(todayStr()), []);
+        const list = load(foodKey(appDayKey()), []);
         list.splice(idx, 1);
-        save(foodKey(todayStr()), list);
+        save(foodKey(appDayKey()), list);
         renderFoodList();
         renderDashboard();
       });
@@ -206,11 +333,12 @@
     const name = document.getElementById("foodName").value.trim();
     const calories = Number(document.getElementById("foodCalories").value);
     const protein = Number(document.getElementById("foodProtein").value) || 0;
+    const carbs = Number(document.getElementById("foodCarbs").value) || 0;
     if (!name || !calories) return;
 
-    const list = load(foodKey(todayStr()), []);
-    list.push({ name, calories, protein });
-    save(foodKey(todayStr()), list);
+    const list = load(foodKey(appDayKey()), []);
+    list.push({ name, calories, protein, carbs });
+    save(foodKey(appDayKey()), list);
 
     foodForm.reset();
     renderFoodList();
@@ -221,7 +349,7 @@
   const RING_CIRC = 2 * Math.PI * 88;
 
   function renderWater() {
-    const water = load(waterKey(todayStr()), 0);
+    const water = load(waterKey(appDayKey()), 0);
     document.getElementById("waterDialCount").textContent = water;
     document.getElementById("waterDialGoal").textContent = WATER_GOAL_GLASSES;
 
@@ -239,38 +367,99 @@
 
   function setWater(newVal) {
     const val = Math.max(0, newVal);
-    save(waterKey(todayStr()), val);
+    save(waterKey(appDayKey()), val);
     renderWater();
     renderDashboard();
   }
 
   document.getElementById("waterPlus").addEventListener("click", () => {
-    setWater(load(waterKey(todayStr()), 0) + 1);
+    setWater(load(waterKey(appDayKey()), 0) + 1);
   });
   document.getElementById("waterMinus").addEventListener("click", () => {
-    setWater(load(waterKey(todayStr()), 0) - 1);
+    setWater(load(waterKey(appDayKey()), 0) - 1);
   });
   document.getElementById("waterUndo").addEventListener("click", () => {
-    setWater(load(waterKey(todayStr()), 0) - 1);
+    setWater(load(waterKey(appDayKey()), 0) - 1);
   });
+
+  /* ============ Sleep tracker ============ */
+  const sleepForm = document.getElementById("sleepForm");
+  const sleepEntryList = document.getElementById("sleepEntryList");
+
+  function getSleepLog() { return load(K_SLEEPLOG, []); }
+
+  function computeSleepHours(bedtime, waketime) {
+    const [bh, bm] = bedtime.split(":").map(Number);
+    const [wh, wm] = waketime.split(":").map(Number);
+    let bedMinutes = bh * 60 + bm;
+    let wakeMinutes = wh * 60 + wm;
+    if (wakeMinutes <= bedMinutes) wakeMinutes += 24 * 60; // overnight wrap
+    return (wakeMinutes - bedMinutes) / 60;
+  }
+
+  function getLastSleepEntry() {
+    const log = getSleepLog();
+    if (log.length === 0) return null;
+    return log[log.length - 1];
+  }
+
+  sleepForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const bedtime = document.getElementById("sleepBedtime").value;
+    const waketime = document.getElementById("sleepWaketime").value;
+    if (!bedtime || !waketime) return;
+    const hours = computeSleepHours(bedtime, waketime);
+
+    const log = getSleepLog();
+    const day = appDayKey();
+    const existingIdx = log.findIndex((l) => l.day === day);
+    const entry = { day, bedtime, waketime, hours };
+    if (existingIdx >= 0) log[existingIdx] = entry;
+    else log.push(entry);
+    save(K_SLEEPLOG, log);
+
+    sleepForm.reset();
+    renderSleep();
+    renderDashboard();
+  });
+
+  function renderSleep() {
+    const last = getLastSleepEntry();
+    const hours = last ? last.hours : 0;
+    document.getElementById("sleepScreenHours").textContent = hours.toFixed(1);
+    document.getElementById("sleepScreenGoal").textContent = profile.sleepGoal;
+    document.getElementById("sleepScreenProgressFill").style.width = Math.min(100, (hours / profile.sleepGoal) * 100) + "%";
+
+    const log = getSleepLog().slice().reverse().slice(0, 14);
+    if (log.length === 0) {
+      sleepEntryList.innerHTML = `<li class="empty-state">No sleep logged yet. Add last night's bedtime and wake time above.</li>`;
+      return;
+    }
+    sleepEntryList.innerHTML = log.map((e) => `
+      <li class="entry-row">
+        <div>
+          <div class="entry-name">${e.hours.toFixed(1)}h sleep</div>
+          <div class="entry-meta">${e.bedtime} → ${e.waketime} · ${formatDate(e.day)}</div>
+        </div>
+      </li>
+    `).join("");
+  }
 
   /* ============ Weight progress ============ */
   const weightForm = document.getElementById("weightForm");
   const weightEntryList = document.getElementById("weightEntryList");
 
-  function getWeightLog() {
-    return load(K_WEIGHTLOG, []);
-  }
+  function getWeightLog() { return load(K_WEIGHTLOG, []); }
 
   weightForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const val = Number(document.getElementById("weightInput").value);
     if (!val) return;
     const log = getWeightLog();
-    const today = todayStr();
-    const existingIdx = log.findIndex((l) => l.date === today);
+    const day = appDayKey();
+    const existingIdx = log.findIndex((l) => l.date === day);
     if (existingIdx >= 0) log[existingIdx].weight = val;
-    else log.push({ date: today, weight: val });
+    else log.push({ date: day, weight: val });
     log.sort((a, b) => a.date.localeCompare(b.date));
     save(K_WEIGHTLOG, log);
 
@@ -346,14 +535,150 @@
     `;
   }
 
+  /* ============ Alarms ============ */
+  function saveAlarms() { save(K_ALARMS, alarms); }
+
+  function initAlarmUI() {
+    const foodEnabled = document.getElementById("foodAlarmEnabled");
+    const foodTime = document.getElementById("foodAlarmTime");
+    const waterEnabled = document.getElementById("waterAlarmEnabled");
+    const waterInterval = document.getElementById("waterAlarmInterval");
+    const bedtimeEnabled = document.getElementById("bedtimeAlarmEnabled");
+    const bedtimeTime = document.getElementById("bedtimeAlarmTime");
+    const wakeEnabled = document.getElementById("wakeAlarmEnabled");
+    const wakeTime = document.getElementById("wakeAlarmTime");
+
+    foodEnabled.checked = alarms.food.enabled;
+    foodTime.value = alarms.food.time;
+    waterEnabled.checked = alarms.water.enabled;
+    waterInterval.value = alarms.water.intervalHours;
+    bedtimeEnabled.checked = alarms.bedtime.enabled;
+    bedtimeTime.value = alarms.bedtime.time;
+    wakeEnabled.checked = alarms.wake.enabled;
+    wakeTime.value = alarms.wake.time;
+
+    function maybeRequestPermission() {
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
+
+    foodEnabled.addEventListener("change", () => {
+      alarms.food.enabled = foodEnabled.checked;
+      saveAlarms();
+      if (foodEnabled.checked) maybeRequestPermission();
+    });
+    foodTime.addEventListener("change", () => { alarms.food.time = foodTime.value; saveAlarms(); });
+
+    waterEnabled.addEventListener("change", () => {
+      alarms.water.enabled = waterEnabled.checked;
+      alarms.water.lastFiredAt = Date.now();
+      saveAlarms();
+      if (waterEnabled.checked) maybeRequestPermission();
+    });
+    waterInterval.addEventListener("change", () => {
+      alarms.water.intervalHours = Math.max(1, Number(waterInterval.value) || 2);
+      saveAlarms();
+    });
+
+    bedtimeEnabled.addEventListener("change", () => {
+      alarms.bedtime.enabled = bedtimeEnabled.checked;
+      saveAlarms();
+      if (bedtimeEnabled.checked) maybeRequestPermission();
+    });
+    bedtimeTime.addEventListener("change", () => { alarms.bedtime.time = bedtimeTime.value; saveAlarms(); });
+
+    wakeEnabled.addEventListener("change", () => {
+      alarms.wake.enabled = wakeEnabled.checked;
+      saveAlarms();
+      if (wakeEnabled.checked) maybeRequestPermission();
+    });
+    wakeTime.addEventListener("change", () => { alarms.wake.time = wakeTime.value; saveAlarms(); });
+  }
+
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+      osc.onended = () => ctx.close();
+    } catch (e) { /* audio not available */ }
+  }
+
+  const alarmToast = document.getElementById("alarmToast");
+  const alarmToastText = document.getElementById("alarmToastText");
+  document.getElementById("alarmToastDismiss").addEventListener("click", () => {
+    alarmToast.classList.remove("show");
+  });
+
+  function fireAlarm(title, body) {
+    beep();
+    alarmToastText.textContent = body;
+    alarmToast.classList.add("show");
+    setTimeout(() => alarmToast.classList.remove("show"), 12000);
+    if ("Notification" in window && Notification.permission === "granted") {
+      try { new Notification(title, { body }); } catch (e) {}
+    }
+  }
+
+  let lastFiredMinuteKey = {};
+  function checkAlarms() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    const nowTime = `${hh}:${mm}`;
+    const minuteStamp = `${appDayKey()}_${nowTime}`;
+
+    if (alarms.food.enabled && alarms.food.time === nowTime && lastFiredMinuteKey.food !== minuteStamp) {
+      lastFiredMinuteKey.food = minuteStamp;
+      fireAlarm("GAINLINE — Meal reminder", "Time to log a meal and keep the surplus going.");
+    }
+    if (alarms.bedtime.enabled && alarms.bedtime.time === nowTime && lastFiredMinuteKey.bedtime !== minuteStamp) {
+      lastFiredMinuteKey.bedtime = minuteStamp;
+      fireAlarm("GAINLINE — Bedtime", "Wind down — consistent sleep supports your gains.");
+    }
+    if (alarms.wake.enabled && alarms.wake.time === nowTime && lastFiredMinuteKey.wake !== minuteStamp) {
+      lastFiredMinuteKey.wake = minuteStamp;
+      fireAlarm("GAINLINE — Wake up", "Good morning — log last night's sleep and weigh in.");
+    }
+    if (alarms.water.enabled) {
+      const last = alarms.water.lastFiredAt || 0;
+      const intervalMs = (alarms.water.intervalHours || 2) * 3600 * 1000;
+      if (Date.now() - last >= intervalMs) {
+        alarms.water.lastFiredAt = Date.now();
+        saveAlarms();
+        fireAlarm("GAINLINE — Water reminder", "Time for a glass of water.");
+      }
+    }
+  }
+  setInterval(checkAlarms, 20000);
+
+  /* ============ Daily rollover watcher ============ */
+  // If the tab stays open across the 6 AM IST boundary, refresh views automatically.
+  let currentAppDay = appDayKey();
+  setInterval(() => {
+    const nowDay = appDayKey();
+    if (nowDay !== currentAppDay) {
+      currentAppDay = nowDay;
+      renderAll();
+    }
+  }, 30000);
+
   /* ============ Render all ============ */
   function renderAll() {
     renderDashboard();
     renderFoodList();
     renderWater();
+    renderSleep();
     renderWeightList();
     renderWeightChart();
   }
 
+  initAlarmUI();
   renderAll();
 })();

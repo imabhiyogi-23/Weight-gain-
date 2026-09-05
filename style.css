@@ -417,3 +417,139 @@ input,select{font-family:inherit;}
   .app{margin-top:24px;margin-bottom:24px;border-radius:32px;box-shadow:0 20px 60px rgba(21,20,28,.12);min-height:auto;overflow:hidden;}
   body{display:flex;justify-content:center;background:#efe9df;}
 }
+
+/* ===== Clock ===== */
+.clock-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:14px;
+}
+.clock-card{
+  background:var(--ink);
+  color:#fff;
+  border-radius:var(--radius-md);
+  padding:14px 16px;
+  text-align:center;
+}
+.clock-label{font-size:.68rem;color:#ffffffb3;margin:0 0 6px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;}
+.clock-value{font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;margin:0;letter-spacing:-0.01em;}
+.clock-date{font-size:.68rem;color:#ffffff99;margin:4px 0 0;}
+.clock-note{
+  font-size:.72rem;
+  color:var(--ink-soft);
+  text-align:center;
+  margin:8px 0 0;
+}
+
+/* extra fills */
+.fill-blue{background:#3f8cff;}
+.fill-purple{background:#8b5cf6;}
+
+/* ===== Alarm settings block ===== */
+.alarm-block{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  padding:16px;
+  margin-top:14px;
+}
+.alarm-block-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.alarm-block-head h3{font-size:.95rem;font-weight:700;}
+.alarm-block-sub{font-size:.75rem;color:var(--ink-soft);margin:6px 0 12px;}
+.alarm-time-input{
+  border:1px solid var(--line);
+  background:var(--paper);
+  border-radius:var(--radius-sm);
+  padding:11px 13px;
+  font-size:.9rem;
+  color:var(--ink);
+  width:100%;
+  margin-top:10px;
+}
+.alarm-suffix{
+  display:flex;
+  align-items:center;
+  font-size:.8rem;
+  color:var(--ink-soft);
+  white-space:nowrap;
+  padding-right:4px;
+}
+
+/* Toggle switch */
+.switch{position:relative;display:inline-block;width:44px;height:26px;flex:none;}
+.switch input{opacity:0;width:0;height:0;}
+.switch-track{
+  position:absolute;inset:0;
+  background:var(--line);
+  border-radius:99px;
+  transition:background .2s ease;
+  cursor:pointer;
+}
+.switch-track::before{
+  content:"";
+  position:absolute;
+  height:20px;width:20px;
+  left:3px;top:3px;
+  background:#fff;
+  border-radius:50%;
+  transition:transform .2s ease;
+  box-shadow:0 1px 3px rgba(0,0,0,.25);
+}
+.switch input:checked + .switch-track{background:var(--teal);}
+.switch input:checked + .switch-track::before{transform:translateX(18px);}
+
+/* ===== Alarm toast ===== */
+.alarm-toast{
+  position:fixed;
+  top:14px;left:50%;
+  transform:translateX(-50%) translateY(-140%);
+  max-width:440px;
+  width:calc(100% - 32px);
+  background:var(--ink);
+  color:#fff;
+  border-radius:var(--radius-md);
+  padding:14px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  box-shadow:0 12px 30px rgba(0,0,0,.3);
+  z-index:100;
+  transition:transform .3s ease;
+  border-left:4px solid var(--coral);
+}
+.alarm-toast.show{transform:translateX(-50%) translateY(0);}
+.alarm-toast span{font-size:.85rem;font-weight:600;}
+.alarm-toast button{
+  background:var(--coral);
+  color:#fff;
+  border:none;
+  border-radius:99px;
+  padding:8px 14px;
+  font-size:.75rem;
+  font-weight:700;
+  flex:none;
+}
+
+/* ===== Sun timings ===== */
+.sun-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:12px;
+}
+.sun-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  padding:14px 16px;
+  text-align:center;
+}
+.sun-icon{font-size:1.2rem;margin:0 0 4px;}
+.sun-label{font-size:.68rem;color:var(--ink-soft);font-weight:600;margin:0 0 4px;text-transform:uppercase;letter-spacing:.02em;}
+.sun-value{font-family:'Sora',sans-serif;font-size:1.25rem;font-weight:800;margin:0;color:var(--ink);}

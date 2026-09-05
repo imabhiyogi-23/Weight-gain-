@@ -12,6 +12,12 @@
 
 <div class="app">
 
+  <!-- Alarm ringing banner -->
+  <div class="alarm-toast" id="alarmToast">
+    <span id="alarmToastText">Reminder</span>
+    <button id="alarmToastDismiss">Dismiss</button>
+  </div>
+
   <!-- Top bar -->
   <header class="topbar">
     <div class="brand">
@@ -43,6 +49,34 @@
         </div>
       </div>
 
+      <div class="clock-row">
+        <div class="clock-card">
+          <p class="clock-label">IST — India Standard Time</p>
+          <p class="clock-value" id="clockIST">--:--:--</p>
+          <p class="clock-date" id="clockISTDate">—</p>
+        </div>
+        <div class="clock-card">
+          <p class="clock-label">Bengaluru</p>
+          <p class="clock-value" id="clockBLR">--:--:--</p>
+          <p class="clock-date" id="clockBLRDate">—</p>
+        </div>
+      </div>
+      <p class="clock-note">Bengaluru runs on IST — no time difference, both clocks stay in sync.</p>
+
+      <div class="sun-row">
+        <div class="sun-card">
+          <p class="sun-icon">☀</p>
+          <p class="sun-label">Sunrise · Bengaluru</p>
+          <p class="sun-value" id="sunriseValue">--:--</p>
+        </div>
+        <div class="sun-card">
+          <p class="sun-icon">🌇</p>
+          <p class="sun-label">Sunset · Bengaluru</p>
+          <p class="sun-value" id="sunsetValue">--:--</p>
+        </div>
+      </div>
+      <p class="clock-note">Daylight today: <span id="daylightLength">--</span></p>
+
       <div class="card-grid">
 
         <div class="card card-bmi">
@@ -50,7 +84,6 @@
           <p class="card-big" id="bmiValue">14.8</p>
           <p class="card-sub" id="bmiCategory">Underweight — building a surplus will help</p>
           <div class="bmi-scale">
-            <div class="bmi-scale-fill" id="bmiScaleFill"></div>
             <div class="bmi-scale-marker" id="bmiScaleMarker"></div>
           </div>
         </div>
@@ -70,7 +103,16 @@
           <div class="progress-track">
             <div class="progress-fill fill-yellow" id="proteinProgressFill"></div>
           </div>
-          <p class="card-sub">Protein is what turns the surplus into muscle, not just fat.</p>
+          <p class="card-sub">Turns the surplus into muscle, not just fat.</p>
+        </div>
+
+        <div class="card card-carbs">
+          <p class="card-label">Carbs today</p>
+          <p class="card-big"><span id="carbsEatenToday">0</span><span class="card-big-of">/<span id="carbsGoalDisplay">150</span>g</span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-blue" id="carbsProgressFill"></div>
+          </div>
+          <p class="card-sub">Your main fuel for the extra calories to actually get eaten.</p>
         </div>
 
         <div class="card card-water">
@@ -80,6 +122,15 @@
             <div class="progress-fill fill-teal" id="waterProgressFill"></div>
           </div>
           <p class="card-sub">≈ <span id="waterMlToday">0</span> ml of <span id="waterGoalMl">2500</span> ml</p>
+        </div>
+
+        <div class="card card-sleep">
+          <p class="card-label">Last night's sleep</p>
+          <p class="card-big"><span id="sleepHoursToday">0.0</span><span class="card-big-of">/<span id="sleepGoalDisplay">8</span>h</span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-purple" id="sleepProgressFill"></div>
+          </div>
+          <p class="card-sub">Growth and appetite hormones reset while you sleep.</p>
         </div>
 
       </div>
@@ -100,6 +151,7 @@
         <div class="log-form-row">
           <input type="number" id="foodCalories" placeholder="Calories" min="0" required>
           <input type="number" id="foodProtein" placeholder="Protein (g)" min="0">
+          <input type="number" id="foodCarbs" placeholder="Carbs (g)" min="0">
         </div>
         <button type="submit" class="btn-primary">Add to today's log</button>
       </form>
@@ -107,11 +159,23 @@
       <div class="progress-track big-track">
         <div class="progress-fill fill-coral" id="foodScreenProgressFill"></div>
       </div>
-      <p class="screen-progress-label"><span id="foodScreenEaten">0</span> of <span id="foodScreenGoal">2300</span> kcal · <span id="foodScreenProtein">0</span>g protein</p>
+      <p class="screen-progress-label"><span id="foodScreenEaten">0</span> of <span id="foodScreenGoal">2300</span> kcal · <span id="foodScreenProtein">0</span>g protein · <span id="foodScreenCarbs">0</span>g carbs</p>
 
       <ul class="entry-list" id="foodEntryList">
         <li class="empty-state">Nothing logged yet today. Add your first meal above.</li>
       </ul>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Meal reminder</h3>
+          <label class="switch">
+            <input type="checkbox" id="foodAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <p class="alarm-block-sub">Get a nudge if you haven't logged a meal in a while.</p>
+        <input type="time" id="foodAlarmTime" class="alarm-time-input">
+      </div>
     </section>
 
     <!-- ============ WATER ============ -->
@@ -137,6 +201,62 @@
       </div>
 
       <div class="glass-grid" id="glassGrid"></div>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Water reminder</h3>
+          <label class="switch">
+            <input type="checkbox" id="waterAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <p class="alarm-block-sub">Repeats every N hours while the app is open.</p>
+        <div class="log-form-row">
+          <input type="number" id="waterAlarmInterval" class="alarm-time-input" min="1" max="6" value="2">
+          <span class="alarm-suffix">hours</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLEEP ============ -->
+    <section class="screen" id="screen-sleep">
+      <h2 class="screen-title">Sleep tracker</h2>
+      <p class="screen-sub">Log last night's sleep — recovery drives appetite and growth.</p>
+
+      <form class="log-form log-form-inline" id="sleepForm">
+        <input type="time" id="sleepBedtime" required>
+        <input type="time" id="sleepWaketime" required>
+        <button type="submit" class="btn-primary">Log</button>
+      </form>
+
+      <div class="progress-track big-track">
+        <div class="progress-fill fill-purple" id="sleepScreenProgressFill"></div>
+      </div>
+      <p class="screen-progress-label"><span id="sleepScreenHours">0.0</span>h of <span id="sleepScreenGoal">8</span>h goal — last night</p>
+
+      <ul class="entry-list" id="sleepEntryList"></ul>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Bedtime alarm</h3>
+          <label class="switch">
+            <input type="checkbox" id="bedtimeAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <input type="time" id="bedtimeAlarmTime" class="alarm-time-input">
+      </div>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Wake alarm</h3>
+          <label class="switch">
+            <input type="checkbox" id="wakeAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <input type="time" id="wakeAlarmTime" class="alarm-time-input">
+      </div>
     </section>
 
     <!-- ============ PROGRESS ============ -->
@@ -170,6 +290,9 @@
     <button class="nav-item" data-screen="water">
       <span class="nav-icon">■</span><span>Water</span>
     </button>
+    <button class="nav-item" data-screen="sleep">
+      <span class="nav-icon">☾</span><span>Sleep</span>
+    </button>
     <button class="nav-item" data-screen="progress">
       <span class="nav-icon">◆</span><span>Progress</span>
     </button>
@@ -196,6 +319,9 @@
       </label>
       <label>Target weight (kg)
         <input type="number" id="pTarget" step="0.1" min="20" max="200" required>
+      </label>
+      <label>Sleep goal (hours)
+        <input type="number" id="pSleepGoal" step="0.5" min="4" max="12" required>
       </label>
       <label>Activity level
         <select id="pActivity">
