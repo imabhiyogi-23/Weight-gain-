@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#15141c">
+<meta name="description" content="GAINLINE — a weight gain, food, water and sleep tracker.">
+<title>GAINLINE — Abhishek's Bulk Up Plan</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Alarm ringing banner -->
+  <div class="alarm-toast" id="alarmToast">
+    <span id="alarmToastText">Reminder</span>
+    <button id="alarmToastDismiss">Dismiss</button>
+  </div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">GAINLINE</span>
+      <span class="build-tag" id="buildTag"></span>
+    </div>
+    <button class="edit-profile-btn" id="editProfileBtn" aria-label="Edit profile">Edit profile</button>
+  </header>
+
+  <main class="screens">
+
+    <!-- ============ DASHBOARD ============ -->
+    <section class="screen active" id="screen-dashboard">
+
+      <div class="hero">
+        <div class="hero-text">
+          <p class="hero-eyebrow-free">Day <span id="dayStreak">1</span> of the plan</p>
+          <h1 id="heroName">Hey Abhishek, let's put on some weight.</h1>
+        </div>
+        <div class="hero-stat-block">
+          <div class="hero-stat">
+            <span class="hero-stat-value" id="currentWeightHero">37.0</span>
+            <span class="hero-stat-unit">kg today</span>
+          </div>
+          <div class="hero-stat-arrow">→</div>
+          <div class="hero-stat">
+            <span class="hero-stat-value" id="targetWeightHero">55.0</span>
+            <span class="hero-stat-unit">kg goal</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="clock-row">
+        <div class="clock-card">
+          <p class="clock-label">IST · clock time</p>
+          <svg viewBox="0 0 100 100" class="clock-face" id="clockFaceIST">
+            <circle cx="50" cy="50" r="46" class="clock-face-ring"/>
+            <g class="clock-ticks">
+              <line x1="50" y1="7" x2="50" y2="13"/><line x1="50" y1="87" x2="50" y2="93"/>
+              <line x1="7" y1="50" x2="13" y2="50"/><line x1="87" y1="50" x2="93" y2="50"/>
+              <line x1="20.7" y1="20.7" x2="24.9" y2="24.9"/><line x1="75.1" y1="75.1" x2="79.3" y2="79.3"/>
+              <line x1="79.3" y1="20.7" x2="75.1" y2="24.9"/><line x1="24.9" y1="75.1" x2="20.7" y2="79.3"/>
+            </g>
+            <line x1="50" y1="50" x2="50" y2="27" class="clock-hand clock-hand-hour" id="hourIST"/>
+            <line x1="50" y1="50" x2="50" y2="16" class="clock-hand clock-hand-min" id="minIST"/>
+            <line x1="50" y1="50" x2="50" y2="14" class="clock-hand clock-hand-sec" id="secIST"/>
+            <circle cx="50" cy="50" r="3" class="clock-center"/>
+          </svg>
+          <p class="clock-value" id="clockIST">--:--:--</p>
+          <p class="clock-date" id="clockISTDate">—</p>
+        </div>
+        <div class="clock-card">
+          <p class="clock-label">True solar time · Bengaluru</p>
+          <svg viewBox="0 0 100 100" class="clock-face" id="clockFaceBLR">
+            <circle cx="50" cy="50" r="46" class="clock-face-ring"/>
+            <g class="clock-ticks">
+              <line x1="50" y1="7" x2="50" y2="13"/><line x1="50" y1="87" x2="50" y2="93"/>
+              <line x1="7" y1="50" x2="13" y2="50"/><line x1="87" y1="50" x2="93" y2="50"/>
+              <line x1="20.7" y1="20.7" x2="24.9" y2="24.9"/><line x1="75.1" y1="75.1" x2="79.3" y2="79.3"/>
+              <line x1="79.3" y1="20.7" x2="75.1" y2="24.9"/><line x1="24.9" y1="75.1" x2="20.7" y2="79.3"/>
+            </g>
+            <line x1="50" y1="50" x2="50" y2="27" class="clock-hand clock-hand-hour" id="hourBLR"/>
+            <line x1="50" y1="50" x2="50" y2="16" class="clock-hand clock-hand-min" id="minBLR"/>
+            <line x1="50" y1="50" x2="50" y2="14" class="clock-hand clock-hand-sec" id="secBLR"/>
+            <circle cx="50" cy="50" r="3" class="clock-center"/>
+          </svg>
+          <p class="clock-value" id="clockBLR">--:--:--</p>
+          <p class="clock-date" id="clockBLRDate">based on sun position</p>
+        </div>
+      </div>
+      <p class="clock-note" id="solarOffsetNote">Calculating solar offset…</p>
+
+      <div class="card solar-card">
+        <p class="card-label">Bengaluru solar timings</p>
+        <div class="solar-timeline" id="solarTimeline">
+          <div class="solar-item">
+            <svg class="solar-item-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/></svg>
+            <span class="solar-item-label">Dawn</span>
+            <span class="solar-item-time" id="dawnValue">--:--</span>
+          </div>
+          <div class="solar-item">
+            <svg class="solar-item-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="3.5" y1="14" x2="6.5" y2="14"/><line x1="17.5" y1="14" x2="20.5" y2="14"/><line x1="5.6" y1="7.6" x2="7.7" y2="9.7"/><line x1="16.3" y1="18.3" x2="18.4" y2="20.4"/><line x1="18.4" y1="7.6" x2="16.3" y2="9.7"/><line x1="7.7" y1="18.3" x2="5.6" y2="20.4"/></svg>
+            <span class="solar-item-label">Sunrise</span>
+            <span class="solar-item-time" id="sunriseValue">--:--</span>
+          </div>
+          <div class="solar-item">
+            <svg class="solar-item-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="3.5" y1="12" x2="6.5" y2="12"/><line x1="17.5" y1="12" x2="20.5" y2="12"/><line x1="5.6" y1="5.6" x2="7.7" y2="7.7"/><line x1="16.3" y1="16.3" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.3" y2="7.7"/><line x1="7.7" y1="16.3" x2="5.6" y2="18.4"/></svg>
+            <span class="solar-item-label">Solar noon</span>
+            <span class="solar-item-time" id="solarNoonValue">--:--</span>
+          </div>
+          <div class="solar-item">
+            <svg class="solar-item-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="3.5" y1="12" x2="6.5" y2="12"/><line x1="17.5" y1="12" x2="20.5" y2="12"/><line x1="5.6" y1="5.6" x2="7.7" y2="7.7"/><line x1="16.3" y1="16.3" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.3" y2="7.7"/><line x1="7.7" y1="16.3" x2="5.6" y2="18.4"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+            <span class="solar-item-label">Sunset</span>
+            <span class="solar-item-time" id="sunsetValue">--:--</span>
+          </div>
+          <div class="solar-item">
+            <svg class="solar-item-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+            <span class="solar-item-label">Dusk</span>
+            <span class="solar-item-time" id="duskValue">--:--</span>
+          </div>
+        </div>
+        <p class="card-sub">Daylight today: <span id="daylightLength">--</span></p>
+      </div>
+
+      <div class="card-grid">
+
+        <div class="card card-bmi">
+          <p class="card-label">Body mass index</p>
+          <p class="card-big" id="bmiValue">14.8</p>
+          <p class="card-sub" id="bmiCategory">Underweight — building a surplus will help</p>
+          <div class="bmi-scale">
+            <div class="bmi-scale-marker" id="bmiScaleMarker"></div>
+          </div>
+        </div>
+
+        <div class="card card-calories">
+          <p class="card-label">Calories today</p>
+          <p class="card-big"><span id="caloriesEatenToday">0</span><span class="card-big-of">/<span id="calorieGoalDisplay">2300</span></span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-coral" id="calorieProgressFill"></div>
+          </div>
+          <p class="card-sub" id="calorieRemainingText">2300 kcal left to hit today's surplus</p>
+        </div>
+
+        <div class="card card-protein">
+          <p class="card-label">Protein today</p>
+          <p class="card-big"><span id="proteinEatenToday">0</span><span class="card-big-of">/<span id="proteinGoalDisplay">67</span>g</span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-yellow" id="proteinProgressFill"></div>
+          </div>
+          <p class="card-sub">Turns the surplus into muscle, not just fat.</p>
+        </div>
+
+        <div class="card card-carbs">
+          <p class="card-label">Carbs today</p>
+          <p class="card-big"><span id="carbsEatenToday">0</span><span class="card-big-of">/<span id="carbsGoalDisplay">150</span>g</span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-blue" id="carbsProgressFill"></div>
+          </div>
+          <p class="card-sub">Your main fuel for the extra calories to actually get eaten.</p>
+        </div>
+
+        <div class="card card-fats">
+          <p class="card-label">Fats today</p>
+          <p class="card-big"><span id="fatsEatenToday">0</span><span class="card-big-of">/<span id="fatsGoalDisplay">70</span>g</span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-orange" id="fatsProgressFill"></div>
+          </div>
+          <p class="card-sub">Calorie-dense — a spoon of ghee or nuts adds up fast.</p>
+        </div>
+
+        <div class="card card-water">
+          <p class="card-label">Water today</p>
+          <p class="card-big"><span id="waterCountToday">0</span><span class="card-big-of">/<span id="waterGoalDisplay">10</span> glasses</span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-teal" id="waterProgressFill"></div>
+          </div>
+          <p class="card-sub">≈ <span id="waterMlToday">0</span> ml of <span id="waterGoalMl">2500</span> ml</p>
+        </div>
+
+        <div class="card card-sleep">
+          <p class="card-label">Last night's sleep</p>
+          <p class="card-big"><span id="sleepHoursToday">0.0</span><span class="card-big-of">/<span id="sleepGoalDisplay">8</span>h</span></p>
+          <div class="progress-track">
+            <div class="progress-fill fill-purple" id="sleepProgressFill"></div>
+          </div>
+          <p class="card-sub">Growth and appetite hormones reset while you sleep.</p>
+        </div>
+
+      </div>
+
+      <div class="tip-strip" id="tipStrip">
+        <p id="tipText">Small appetite, frequent plate: aim for 5–6 smaller meals instead of 3 big ones today.</p>
+      </div>
+
+    </section>
+
+    <!-- ============ FOOD ============ -->
+    <section class="screen" id="screen-food">
+      <h2 class="screen-title">Food tracker</h2>
+      <p class="screen-sub">Log every meal and snack — surplus adds up in small bites.</p>
+
+      <div class="date-nav">
+        <button class="date-nav-arrow" id="foodPrevDay" aria-label="Previous day">‹</button>
+        <div class="date-nav-center">
+          <button type="button" class="date-nav-label" id="foodDateLabel">Today</button>
+          <button class="date-nav-today" id="foodJumpToday">Jump to today</button>
+        </div>
+        <button class="date-nav-arrow" id="foodNextDay" aria-label="Next day">›</button>
+      </div>
+
+      <div class="calendar-panel" id="foodCalendarPanel">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" id="foodCalPrevMonth" aria-label="Previous month">‹</button>
+          <span class="calendar-month-label" id="foodCalMonthLabel">—</span>
+          <button type="button" class="calendar-nav-btn" id="foodCalNextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+        <div class="calendar-grid" id="foodCalGrid"></div>
+        <p class="calendar-legend">● day with a meal logged</p>
+      </div>
+
+      <form class="log-form" id="foodForm">
+        <input type="text" id="foodName" placeholder="What did you eat?" required maxlength="60">
+        <div class="log-form-row">
+          <input type="number" id="foodCalories" placeholder="Calories" min="0" required>
+          <input type="number" id="foodProtein" placeholder="Protein (g)" min="0">
+        </div>
+        <div class="log-form-row">
+          <input type="number" id="foodCarbs" placeholder="Carbs (g)" min="0">
+          <input type="number" id="foodFats" placeholder="Fats (g)" min="0">
+        </div>
+        <button type="submit" class="btn-primary">Add to today's log</button>
+      </form>
+
+      <div class="progress-track big-track">
+        <div class="progress-fill fill-coral" id="foodScreenProgressFill"></div>
+      </div>
+      <p class="screen-progress-label"><span id="foodScreenEaten">0</span> of <span id="foodScreenGoal">2300</span> kcal · <span id="foodScreenProtein">0</span>g protein · <span id="foodScreenCarbs">0</span>g carbs · <span id="foodScreenFats">0</span>g fats</p>
+
+      <ul class="entry-list" id="foodEntryList">
+        <li class="empty-state">Nothing logged yet today. Add your first meal above.</li>
+      </ul>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Meal reminder</h3>
+          <label class="switch">
+            <input type="checkbox" id="foodAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <p class="alarm-block-sub">Get a nudge if you haven't logged a meal in a while.</p>
+        <input type="time" id="foodAlarmTime" class="alarm-time-input">
+      </div>
+    </section>
+
+    <!-- ============ WATER ============ -->
+    <section class="screen" id="screen-water">
+      <h2 class="screen-title">Water tracker</h2>
+      <p class="screen-sub">One glass = 250 ml. Tap to log as you drink.</p>
+
+      <div class="date-nav">
+        <button class="date-nav-arrow" id="waterPrevDay" aria-label="Previous day">‹</button>
+        <div class="date-nav-center">
+          <button type="button" class="date-nav-label" id="waterDateLabel">Today</button>
+          <button class="date-nav-today" id="waterJumpToday">Jump to today</button>
+        </div>
+        <button class="date-nav-arrow" id="waterNextDay" aria-label="Next day">›</button>
+      </div>
+
+      <div class="calendar-panel" id="waterCalendarPanel">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" id="waterCalPrevMonth" aria-label="Previous month">‹</button>
+          <span class="calendar-month-label" id="waterCalMonthLabel">—</span>
+          <button type="button" class="calendar-nav-btn" id="waterCalNextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+        <div class="calendar-grid" id="waterCalGrid"></div>
+        <p class="calendar-legend">● day with water logged</p>
+      </div>
+
+      <div class="water-dial">
+        <svg viewBox="0 0 200 200" class="water-ring">
+          <circle cx="100" cy="100" r="88" class="water-ring-track"/>
+          <circle cx="100" cy="100" r="88" class="water-ring-fill" id="waterRingFill"/>
+        </svg>
+        <div class="water-dial-center">
+          <span class="water-dial-count" id="waterDialCount">0</span>
+          <span class="water-dial-goal">of <span id="waterDialGoal">10</span> glasses</span>
+        </div>
+      </div>
+
+      <div class="water-buttons">
+        <button class="btn-round" id="waterMinus" aria-label="Remove a glass">–</button>
+        <button class="btn-primary btn-water-add" id="waterPlus">+ Add a glass</button>
+        <button class="btn-round" id="waterUndo" aria-label="Undo last">↺</button>
+      </div>
+
+      <div class="glass-grid" id="glassGrid"></div>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Water reminder</h3>
+          <label class="switch">
+            <input type="checkbox" id="waterAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <p class="alarm-block-sub">Repeats every N hours while the app is open.</p>
+        <div class="log-form-row">
+          <input type="number" id="waterAlarmInterval" class="alarm-time-input" min="1" max="6" value="2">
+          <span class="alarm-suffix">hours</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLEEP ============ -->
+    <section class="screen" id="screen-sleep">
+      <h2 class="screen-title">Sleep tracker</h2>
+      <p class="screen-sub">Log last night's sleep — recovery drives appetite and growth.</p>
+
+      <div class="date-nav">
+        <button class="date-nav-arrow" id="sleepPrevDay" aria-label="Previous day">‹</button>
+        <div class="date-nav-center">
+          <button type="button" class="date-nav-label" id="sleepDateLabel">Today</button>
+          <button class="date-nav-today" id="sleepJumpToday">Jump to today</button>
+        </div>
+        <button class="date-nav-arrow" id="sleepNextDay" aria-label="Next day">›</button>
+      </div>
+
+      <div class="calendar-panel" id="sleepCalendarPanel">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" id="sleepCalPrevMonth" aria-label="Previous month">‹</button>
+          <span class="calendar-month-label" id="sleepCalMonthLabel">—</span>
+          <button type="button" class="calendar-nav-btn" id="sleepCalNextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+        <div class="calendar-grid" id="sleepCalGrid"></div>
+        <p class="calendar-legend">● night with sleep logged</p>
+      </div>
+
+      <form class="log-form log-form-inline" id="sleepForm">
+        <input type="time" id="sleepBedtime" required>
+        <input type="time" id="sleepWaketime" required>
+        <button type="submit" class="btn-primary">Log</button>
+      </form>
+
+      <div class="progress-track big-track">
+        <div class="progress-fill fill-purple" id="sleepScreenProgressFill"></div>
+      </div>
+      <p class="screen-progress-label"><span id="sleepScreenHours">0.0</span>h of <span id="sleepScreenGoal">8</span>h goal — <span id="sleepScreenDayLabel">last night</span></p>
+
+      <ul class="entry-list" id="sleepEntryList"></ul>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Bedtime alarm</h3>
+          <label class="switch">
+            <input type="checkbox" id="bedtimeAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <input type="time" id="bedtimeAlarmTime" class="alarm-time-input">
+      </div>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Wake alarm</h3>
+          <label class="switch">
+            <input type="checkbox" id="wakeAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <input type="time" id="wakeAlarmTime" class="alarm-time-input">
+      </div>
+    </section>
+
+    <!-- ============ PROGRESS ============ -->
+    <section class="screen" id="screen-progress">
+      <h2 class="screen-title">Weight progress</h2>
+      <p class="screen-sub">Weigh in first thing in the morning, same conditions each time.</p>
+
+      <form class="log-form log-form-inline" id="weightForm">
+        <input type="number" id="weightInput" placeholder="Today's weight (kg)" step="0.1" min="20" max="200" required>
+        <button type="submit" class="btn-primary">Log weight</button>
+      </form>
+
+      <div class="chart-card">
+        <svg viewBox="0 0 320 160" class="weight-chart" id="weightChart"></svg>
+      </div>
+
+      <button type="button" class="date-nav-label calendar-standalone-toggle" id="weightCalToggle">Browse weigh-ins by date ▾</button>
+      <div class="calendar-panel" id="weightCalendarPanel">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" id="weightCalPrevMonth" aria-label="Previous month">‹</button>
+          <span class="calendar-month-label" id="weightCalMonthLabel">—</span>
+          <button type="button" class="calendar-nav-btn" id="weightCalNextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+        <div class="calendar-grid" id="weightCalGrid"></div>
+        <p class="calendar-legend">● day with a weigh-in logged</p>
+        <p class="calendar-picked" id="weightCalPicked"></p>
+      </div>
+
+      <div class="progress-summary" id="progressSummary"></div>
+
+      <ul class="entry-list" id="weightEntryList"></ul>
+    </section>
+
+  </main>
+
+  <nav class="bottomnav">
+    <button class="nav-item active" data-screen="dashboard">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" data-screen="food">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M6 3v7a2 2 0 0 0 2 2v9M6 3v7M9 3v7M6 10h3M17 3c-1.7 0-3 2-3 5s1.3 5 3 5v8"/></svg>
+      <span>Food</span>
+    </button>
+    <button class="nav-item" data-screen="water">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 3S5 11 5 15.5A7 7 0 0 0 19 15.5C19 11 12 3 12 3Z"/></svg>
+      <span>Water</span>
+    </button>
+    <button class="nav-item" data-screen="sleep">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>
+      <span>Sleep</span>
+    </button>
+    <button class="nav-item" data-screen="progress">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      <span>Progress</span>
+    </button>
+  </nav>
+
+</div>
+
+<!-- ============ EDIT PROFILE MODAL ============ -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h3>Edit your profile</h3>
+    <form id="profileForm">
+      <label>Name
+        <input type="text" id="pName" required>
+      </label>
+      <label>Age
+        <input type="number" id="pAge" min="10" max="100" required>
+      </label>
+      <label>Height (cm)
+        <input type="number" id="pHeight" min="100" max="230" required>
+      </label>
+      <label>Current weight (kg)
+        <input type="number" id="pWeight" step="0.1" min="20" max="200" required>
+      </label>
+      <label>Target weight (kg)
+        <input type="number" id="pTarget" step="0.1" min="20" max="200" required>
+      </label>
+      <label>Sleep goal (hours)
+        <input type="number" id="pSleepGoal" step="0.5" min="4" max="12" required>
+      </label>
+      <label>Activity level
+        <select id="pActivity">
+          <option value="1.2">Sedentary — desk job, little exercise</option>
+          <option value="1.375" selected>Light — a few gym sessions a week</option>
+          <option value="1.55">Moderate — training most days</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="cancelProfileBtn">Cancel</button>
+        <button type="submit" class="btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
