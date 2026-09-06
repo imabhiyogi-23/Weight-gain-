@@ -2,7 +2,7 @@
   "use strict";
 
   /* ============ Build/version — bump this on every real change ============ */
-  const APP_VERSION = "2026-09-06.2";
+  const APP_VERSION = "2026-09-06.3";
 
   /* ============ Offline support (PWA) ============ */
   if ("serviceWorker" in navigator) {
@@ -47,6 +47,7 @@
   const K_WEIGHTLOG = "gainline_weight_log";
   const K_SLEEPLOG = "gainline_sleep_log";
   const K_ALARMS = "gainline_alarms";
+  const K_LAST_ACTIVE = "gainline_last_active_at";
   const foodKey = (d) => `gainline_food_${d}`;
   const waterKey = (d) => `gainline_water_${d}`;
 
@@ -895,11 +896,11 @@
     alarmToast.classList.remove("show");
   });
 
-  function fireAlarm(title, body) {
+  function fireAlarm(title, body, holdMs) {
     beep();
     alarmToastText.textContent = body;
     alarmToast.classList.add("show");
-    setTimeout(() => alarmToast.classList.remove("show"), 12000);
+    setTimeout(() => alarmToast.classList.remove("show"), holdMs || 12000);
     if ("Notification" in window && Notification.permission === "granted") {
       try { new Notification(title, { body }); } catch (e) {}
     }
@@ -907,6 +908,8 @@
 
   let lastFiredMinuteKey = {};
   function checkAlarms() {
+    localStorage.setItem(K_LAST_ACTIVE, String(Date.now()));
+
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, "0");
     const mm = String(now.getMinutes()).padStart(2, "0");
@@ -935,7 +938,65 @@
       }
     }
   }
+
+  /* ============ Catch-up: what you missed while the app was closed ============ */
+  // A browser tab can't ring an alarm while it's fully closed — that needs a
+  // push server or a native app, which a plain static site doesn't have. The
+  // practical alternative: remember when the app was last open, and the
+  // moment it's reopened, tell you which scheduled reminders fell in the gap.
+  // This MUST run before the first checkAlarms() call below, which overwrites
+  // the "last active" timestamp — otherwise there'd be nothing left to catch up on.
+  function checkMissedAlarms() {
+    const now = Date.now();
+    const lastActiveRaw = localStorage.getItem(K_LAST_ACTIVE);
+    const lastActive = lastActiveRaw ? Number(lastActiveRaw) : now;
+    const gapMs = now - lastActive;
+
+    const missed = [];
+    // Ignore trivial gaps (page refresh) and very long ones (weeks away —
+    // nobody wants a wall of stale reminders).
+    if (gapMs > 90 * 1000 && gapMs < 3 * 24 * 3600 * 1000) {
+      const dayAlarms = [
+        { label: "Meal reminder", cfg: alarms.food },
+        { label: "Bedtime alarm", cfg: alarms.bedtime },
+        { label: "Wake alarm", cfg: alarms.wake }
+      ];
+      const startOfLastActiveDay = new Date(lastActive);
+      startOfLastActiveDay.setHours(0, 0, 0, 0);
+
+      for (let dayOffset = 0; dayOffset <= 3; dayOffset++) {
+        const dayStart = new Date(startOfLastActiveDay.getTime() + dayOffset * 86400000);
+        dayAlarms.forEach((a) => {
+          if (!a.cfg.enabled) return;
+          const [ah, am] = a.cfg.time.split(":").map(Number);
+          const candidate = new Date(dayStart);
+          candidate.setHours(ah, am, 0, 0);
+          if (candidate.getTime() > lastActive && candidate.getTime() <= now) {
+            missed.push({ label: a.label, time: candidate });
+          }
+        });
+      }
+    }
+
+    return missed;
+  }
+
+  const missedAlarms = checkMissedAlarms(); // read the old timestamp first…
+  checkAlarms();                            // …then this overwrites it and does the live check
   setInterval(checkAlarms, 20000);
+
+  if (missedAlarms.length > 0) {
+    const summary = missedAlarms
+      .map((m) => `${m.label} (${m.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`)
+      .join(", ");
+    fireAlarm(
+      "GAINLINE — While you were away",
+      missedAlarms.length === 1 ? `You missed: ${summary}` : `You missed ${missedAlarms.length} reminders: ${summary}`,
+      20000
+    );
+  }
+
+
 
   /* ============ Daily rollover watcher ============ */
   // If the tab stays open across the 6 AM IST boundary, refresh views automatically.
