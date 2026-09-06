@@ -208,10 +208,21 @@
       <div class="date-nav">
         <button class="date-nav-arrow" id="foodPrevDay" aria-label="Previous day">‹</button>
         <div class="date-nav-center">
-          <span class="date-nav-label" id="foodDateLabel">Today</span>
+          <button type="button" class="date-nav-label" id="foodDateLabel">Today</button>
           <button class="date-nav-today" id="foodJumpToday">Jump to today</button>
         </div>
         <button class="date-nav-arrow" id="foodNextDay" aria-label="Next day">›</button>
+      </div>
+
+      <div class="calendar-panel" id="foodCalendarPanel">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" id="foodCalPrevMonth" aria-label="Previous month">‹</button>
+          <span class="calendar-month-label" id="foodCalMonthLabel">—</span>
+          <button type="button" class="calendar-nav-btn" id="foodCalNextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+        <div class="calendar-grid" id="foodCalGrid"></div>
+        <p class="calendar-legend">● day with a meal logged</p>
       </div>
 
       <form class="log-form" id="foodForm">
@@ -257,10 +268,21 @@
       <div class="date-nav">
         <button class="date-nav-arrow" id="waterPrevDay" aria-label="Previous day">‹</button>
         <div class="date-nav-center">
-          <span class="date-nav-label" id="waterDateLabel">Today</span>
+          <button type="button" class="date-nav-label" id="waterDateLabel">Today</button>
           <button class="date-nav-today" id="waterJumpToday">Jump to today</button>
         </div>
         <button class="date-nav-arrow" id="waterNextDay" aria-label="Next day">›</button>
+      </div>
+
+      <div class="calendar-panel" id="waterCalendarPanel">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" id="waterCalPrevMonth" aria-label="Previous month">‹</button>
+          <span class="calendar-month-label" id="waterCalMonthLabel">—</span>
+          <button type="button" class="calendar-nav-btn" id="waterCalNextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+        <div class="calendar-grid" id="waterCalGrid"></div>
+        <p class="calendar-legend">● day with water logged</p>
       </div>
 
       <div class="water-dial">
@@ -306,10 +328,21 @@
       <div class="date-nav">
         <button class="date-nav-arrow" id="sleepPrevDay" aria-label="Previous day">‹</button>
         <div class="date-nav-center">
-          <span class="date-nav-label" id="sleepDateLabel">Today</span>
+          <button type="button" class="date-nav-label" id="sleepDateLabel">Today</button>
           <button class="date-nav-today" id="sleepJumpToday">Jump to today</button>
         </div>
         <button class="date-nav-arrow" id="sleepNextDay" aria-label="Next day">›</button>
+      </div>
+
+      <div class="calendar-panel" id="sleepCalendarPanel">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" id="sleepCalPrevMonth" aria-label="Previous month">‹</button>
+          <span class="calendar-month-label" id="sleepCalMonthLabel">—</span>
+          <button type="button" class="calendar-nav-btn" id="sleepCalNextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+        <div class="calendar-grid" id="sleepCalGrid"></div>
+        <p class="calendar-legend">● night with sleep logged</p>
       </div>
 
       <form class="log-form log-form-inline" id="sleepForm">
@@ -360,6 +393,19 @@
 
       <div class="chart-card">
         <svg viewBox="0 0 320 160" class="weight-chart" id="weightChart"></svg>
+      </div>
+
+      <button type="button" class="date-nav-label calendar-standalone-toggle" id="weightCalToggle">Browse weigh-ins by date ▾</button>
+      <div class="calendar-panel" id="weightCalendarPanel">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" id="weightCalPrevMonth" aria-label="Previous month">‹</button>
+          <span class="calendar-month-label" id="weightCalMonthLabel">—</span>
+          <button type="button" class="calendar-nav-btn" id="weightCalNextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+        <div class="calendar-grid" id="weightCalGrid"></div>
+        <p class="calendar-legend">● day with a weigh-in logged</p>
+        <p class="calendar-picked" id="weightCalPicked"></p>
       </div>
 
       <div class="progress-summary" id="progressSummary"></div>

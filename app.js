@@ -2,7 +2,7 @@
   "use strict";
 
   /* ============ Build/version — bump this on every real change ============ */
-  const APP_VERSION = "2026-09-06.1";
+  const APP_VERSION = "2026-09-06.2";
 
   /* ============ Offline support (PWA) ============ */
   if ("serviceWorker" in navigator) {
@@ -297,6 +297,126 @@
 
   ["food", "water", "sleep"].forEach(wireDateNav);
 
+  /* ============ Calendar pickers (Food / Water / Sleep / Weight) ============ */
+  const monthKeyOf = (dayKey) => dayKey.slice(0, 7); // "YYYY-MM"
+
+  const calendarState = {
+    food: { open: false, monthKey: monthKeyOf(viewDate) },
+    water: { open: false, monthKey: monthKeyOf(viewDate) },
+    sleep: { open: false, monthKey: monthKeyOf(viewDate) },
+    weight: { open: false, monthKey: monthKeyOf(appDayKey()), picked: null }
+  };
+
+  function shiftMonthKey(monthKey, delta) {
+    const [y, m] = monthKey.split("-").map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  function buildCalendarCells(monthKey) {
+    const [y, m] = monthKey.split("-").map(Number);
+    const numDays = new Date(y, m, 0).getDate();
+    const startWeekday = new Date(y, m - 1, 1).getDay();
+    const cells = [];
+    for (let i = 0; i < startWeekday; i++) cells.push(null);
+    for (let d = 1; d <= numDays; d++) {
+      cells.push({ day: d, key: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}` });
+    }
+    return cells;
+  }
+
+  function hasDataForDay(prefix, dayKey) {
+    if (prefix === "food") return load(foodKey(dayKey), []).length > 0;
+    if (prefix === "water") return load(waterKey(dayKey), 0) > 0;
+    if (prefix === "sleep") return !!getSleepLog().find((l) => l.day === dayKey);
+    if (prefix === "weight") return !!getWeightLog().find((l) => l.date === dayKey);
+    return false;
+  }
+
+  function renderCalendar(prefix) {
+    const state = calendarState[prefix];
+    const panel = document.getElementById(`${prefix}CalendarPanel`);
+    if (!panel) return;
+    panel.classList.toggle("open", state.open);
+    if (!state.open) return; // skip the (slightly heavier) grid rebuild while collapsed
+
+    const [y, m] = state.monthKey.split("-").map(Number);
+    document.getElementById(`${prefix}CalMonthLabel`).textContent =
+      new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+    const today = appDayKey();
+    const selectedKey = prefix === "weight" ? state.picked : viewDate;
+    const cells = buildCalendarCells(state.monthKey);
+    const grid = document.getElementById(`${prefix}CalGrid`);
+
+    grid.innerHTML = cells.map((c) => {
+      if (!c) return `<span class="cal-cell cal-cell-blank"></span>`;
+      const isFuture = c.key > today;
+      const isSelected = c.key === selectedKey;
+      const isToday = c.key === today;
+      const hasData = hasDataForDay(prefix, c.key);
+      const cls = ["cal-cell"];
+      if (isSelected) cls.push("selected");
+      if (isToday) cls.push("is-today");
+      if (isFuture) cls.push("disabled");
+      if (hasData) cls.push("has-data");
+      return `<button type="button" class="${cls.join(" ")}" data-key="${c.key}" ${isFuture ? "disabled" : ""}>${c.day}</button>`;
+    }).join("");
+
+    grid.querySelectorAll(".cal-cell:not(.cal-cell-blank)").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.disabled) return;
+        const key = btn.dataset.key;
+        if (prefix === "weight") {
+          state.picked = key;
+          state.open = true; // keep panel open so the picked readout is visible
+          renderWeightCalendarPicked();
+          renderCalendar("weight");
+        } else {
+          viewDate = key;
+          state.open = false;
+          renderAll();
+        }
+      });
+    });
+  }
+
+  function renderWeightCalendarPicked() {
+    const el = document.getElementById("weightCalPicked");
+    if (!el) return;
+    const key = calendarState.weight.picked;
+    if (!key) { el.textContent = ""; return; }
+    const entry = getWeightLog().find((l) => l.date === key);
+    const label = formatDateLabel(key);
+    el.textContent = entry ? `${label}: ${entry.weight.toFixed(1)} kg logged` : `${label}: no weigh-in logged`;
+  }
+
+  function wireCalendar(prefix, toggleId) {
+    const toggleBtn = document.getElementById(toggleId);
+    const prevBtn = document.getElementById(`${prefix}CalPrevMonth`);
+    const nextBtn = document.getElementById(`${prefix}CalNextMonth`);
+    if (!toggleBtn) return;
+    toggleBtn.addEventListener("click", () => {
+      const state = calendarState[prefix];
+      state.open = !state.open;
+      if (state.open) state.monthKey = monthKeyOf(prefix === "weight" ? (state.picked || appDayKey()) : viewDate);
+      renderCalendar(prefix);
+    });
+    prevBtn.addEventListener("click", () => {
+      calendarState[prefix].monthKey = shiftMonthKey(calendarState[prefix].monthKey, -1);
+      renderCalendar(prefix);
+    });
+    nextBtn.addEventListener("click", () => {
+      calendarState[prefix].monthKey = shiftMonthKey(calendarState[prefix].monthKey, 1);
+      renderCalendar(prefix);
+    });
+  }
+
+  wireCalendar("food", "foodDateLabel");
+  wireCalendar("water", "waterDateLabel");
+  wireCalendar("sleep", "sleepDateLabel");
+  wireCalendar("weight", "weightCalToggle");
+
 
   const screens = document.querySelectorAll(".screen");
   const navItems = document.querySelectorAll(".nav-item");
@@ -423,6 +543,7 @@
 
   function renderFoodList() {
     renderDateNav("food");
+    renderCalendar("food");
     const food = load(foodKey(viewDate), []);
     const g = computeGoals(profile);
     const eatenCal = food.reduce((s, f) => s + f.calories, 0);
@@ -493,6 +614,7 @@
 
   function renderWater() {
     renderDateNav("water");
+    renderCalendar("water");
     const water = load(waterKey(viewDate), 0);
     document.getElementById("waterDialCount").textContent = water;
     document.getElementById("waterDialGoal").textContent = WATER_GOAL_GLASSES;
@@ -574,6 +696,7 @@
 
   function renderSleep() {
     renderDateNav("sleep");
+    renderCalendar("sleep");
     const entry = getSleepEntryForDay(viewDate);
     const hours = entry ? entry.hours : 0;
     document.getElementById("sleepScreenHours").textContent = hours.toFixed(1);
@@ -625,6 +748,8 @@
   });
 
   function renderWeightList() {
+    renderCalendar("weight");
+    renderWeightCalendarPicked();
     const log = getWeightLog().slice().reverse();
     if (log.length === 0) {
       weightEntryList.innerHTML = `<li class="empty-state">No weigh-ins yet. Log today's weight above to start your trend.</li>`;
