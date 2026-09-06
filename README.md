@@ -6,7 +6,7 @@ No build step, no backend, no signup — pure HTML/CSS/JS. Your data is saved lo
 
 ## Features
 
-- **Live analog clocks** — real clock faces (not just digital text) for IST and Bengaluru, ticking every second, plus a digital readout underneath. Bengaluru runs on IST, so they always match — that's expected, not a bug.
+- **Live clocks: IST vs. true solar time** — the first clock is ordinary IST clock time. The second is **true apparent solar time** — where the sun actually is in the sky right now — which differs from the clock by a few minutes to half an hour depending on the day (a combination of Bengaluru's longitude relative to India's official time meridian, and the "equation of time" caused by Earth's tilted, elliptical orbit). A line under the clocks states today's exact gap, e.g. *"Clock time (IST) is about 18 min ahead of true solar time in Bengaluru today."*
 - **Bengaluru solar timings** — civil dawn, sunrise, solar noon, sunset, and civil dusk, plus total daylight, all computed client-side with an astronomical formula (no API key or internet call needed) for Bengaluru's coordinates.
 - **Dashboard** — BMI, calories, protein, carbs, fats, water, and sleep progress at a glance, all calculated live from your profile.
 - **Food tracker** — log meals with calories, protein, carbs, and fats; the calorie goal is auto-calculated from a surplus over your estimated maintenance calories (Mifflin-St Jeor formula), with carb and fat goals splitting the remaining calories after protein (60/40 toward carbs, since they're the easiest way to eat through a surplus).

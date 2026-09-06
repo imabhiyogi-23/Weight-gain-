@@ -2,7 +2,7 @@
   "use strict";
 
   /* ============ Build/version — bump this on every real change ============ */
-  const APP_VERSION = "2026-09-05.3";
+  const APP_VERSION = "2026-09-06.1";
 
   /* ============ Offline support (PWA) ============ */
   if ("serviceWorker" in navigator) {
@@ -112,7 +112,12 @@
     return { bmi, bmiCategory, bmr, tdee, calorieGoal, proteinGoal, carbsGoal, fatsGoal };
   }
 
-  /* ============ Live clocks (IST + Bengaluru — same zone) ============ */
+  /* ============ Live clocks (IST clock time + Bengaluru true solar time) ============ */
+  // solarOffsetMinutes = how many minutes the IST clock is ahead of true
+  // apparent solar time in Bengaluru today (negative = clock is behind).
+  // Recomputed once an hour in renderSunTimes(); consumed every second here.
+  let solarOffsetMinutes = 0;
+
   function setHands(prefix, h, m, s) {
     const hourDeg = (h % 12) * 30 + m * 0.5;
     const minDeg = m * 6 + s * 0.1;
@@ -133,14 +138,25 @@
 
     document.getElementById("clockIST").textContent = timeStr;
     document.getElementById("clockISTDate").textContent = dateStr;
-    document.getElementById("clockBLR").textContent = timeStr;
-    document.getElementById("clockBLRDate").textContent = dateStr;
-
     setHands("IST", h, m, s);
-    setHands("BLR", h, m, s);
+
+    // True apparent solar time = clock time shifted by today's solar offset
+    // (longitude-from-IST-meridian correction + equation of time, combined).
+    const solarMs = ist.getTime() - solarOffsetMinutes * 60000;
+    const solarDate = new Date(solarMs);
+    const sh = solarDate.getHours(), sm = solarDate.getMinutes(), ss = solarDate.getSeconds();
+    document.getElementById("clockBLR").textContent = formatHMS(sh, sm, ss);
+    setHands("BLR", sh, sm, ss);
   }
   renderClocks();
   setInterval(renderClocks, 1000);
+
+  function formatHMS(h, m, s) {
+    const period = h >= 12 ? "pm" : "am";
+    let hh = h % 12;
+    if (hh === 0) hh = 12;
+    return `${hh}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} ${period}`;
+  }
 
   /* ============ Bengaluru solar timings ============ */
   // General-purpose sunrise equation (astronomical, computed client-side —
@@ -188,6 +204,12 @@
     };
   }
 
+  function toISTComponents(date) {
+    // Same trick as getISTNow(), but for an arbitrary Date instead of "now".
+    const s = date.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    return new Date(s);
+  }
+
   function renderSunTimes() {
     const ist = getISTNow(); // gives IST calendar date regardless of device timezone
     const y = ist.getFullYear(), m = ist.getMonth() + 1, d = ist.getDate();
@@ -206,8 +228,22 @@
     const hrs = Math.floor(daylightMs / 3600000);
     const mins = Math.round((daylightMs % 3600000) / 60000);
     document.getElementById("daylightLength").textContent = `${hrs}h ${mins}m`;
+
+    // Solar noon (std.transit) is the instant the sun is truest overhead —
+    // i.e. when apparent solar time reads exactly 12:00. Comparing that
+    // instant's IST clock reading to 12:00 gives how far the clock has
+    // drifted from the sun today (longitude offset + equation of time).
+    const transitIST = toISTComponents(std.transit);
+    const minutesSinceMidnight = transitIST.getHours() * 60 + transitIST.getMinutes() + transitIST.getSeconds() / 60;
+    solarOffsetMinutes = minutesSinceMidnight - 720;
+
+    const absMin = Math.round(Math.abs(solarOffsetMinutes));
+    const direction = solarOffsetMinutes >= 0 ? "ahead of" : "behind";
+    document.getElementById("solarOffsetNote").textContent =
+      `Clock time (IST) is about ${absMin} min ${direction} true solar time in Bengaluru today.`;
   }
   renderSunTimes();
+  renderClocks(); // repaint now that the real solar offset is known (avoids a brief flash)
   setInterval(renderSunTimes, 60 * 60 * 1000); // recompute hourly, rolls to a new day naturally
 
   /* ============ Day-to-day browsing state ============ */

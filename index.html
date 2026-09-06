@@ -57,7 +57,7 @@
 
       <div class="clock-row">
         <div class="clock-card">
-          <p class="clock-label">IST</p>
+          <p class="clock-label">IST · clock time</p>
           <svg viewBox="0 0 100 100" class="clock-face" id="clockFaceIST">
             <circle cx="50" cy="50" r="46" class="clock-face-ring"/>
             <g class="clock-ticks">
@@ -75,7 +75,7 @@
           <p class="clock-date" id="clockISTDate">—</p>
         </div>
         <div class="clock-card">
-          <p class="clock-label">Bengaluru</p>
+          <p class="clock-label">True solar time · Bengaluru</p>
           <svg viewBox="0 0 100 100" class="clock-face" id="clockFaceBLR">
             <circle cx="50" cy="50" r="46" class="clock-face-ring"/>
             <g class="clock-ticks">
@@ -90,10 +90,10 @@
             <circle cx="50" cy="50" r="3" class="clock-center"/>
           </svg>
           <p class="clock-value" id="clockBLR">--:--:--</p>
-          <p class="clock-date" id="clockBLRDate">—</p>
+          <p class="clock-date" id="clockBLRDate">based on sun position</p>
         </div>
       </div>
-      <p class="clock-note">Bengaluru runs on IST — no time difference, both clocks stay in sync.</p>
+      <p class="clock-note" id="solarOffsetNote">Calculating solar offset…</p>
 
       <div class="card solar-card">
         <p class="card-label">Bengaluru solar timings</p>
