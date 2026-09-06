@@ -634,3 +634,11 @@ input,select{font-family:inherit;}
   display:none;
 }
 .date-nav-today.show{display:inline;}
+.build-tag{
+  display:block;
+  font-size:.6rem;
+  font-weight:600;
+  color:var(--ink-soft);
+  margin-top:2px;
+  letter-spacing:.02em;
+}

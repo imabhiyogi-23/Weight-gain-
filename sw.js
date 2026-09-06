@@ -1,6 +1,13 @@
 // GAINLINE service worker — makes the app usable offline once it has been
 // opened at least once while online (or served locally).
-const CACHE_NAME = "gainline-cache-v1";
+//
+// Strategy: network-first for the app's own files (index.html, style.css,
+// app.js, manifest, icons). That means: whenever you're online, you always
+// get the newest version — the cache is only a fallback for when the
+// network request fails (i.e. you're offline). This avoids the classic PWA
+// trap where an old cached build gets served forever even after the real
+// files have changed.
+const CACHE_NAME = "gainline-cache-v2";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -27,31 +34,24 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Cache-first for same-origin app files; network-first (with cache fallback)
-// for everything else (e.g. the Google Fonts CSS/woff), so the app still
-// renders offline even if a font can't be fetched.
+async function networkFirst(req) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const fresh = await fetch(req, { cache: "no-store" });
+    if (fresh && fresh.ok) cache.put(req, fresh.clone());
+    return fresh;
+  } catch (e) {
+    const cached = await cache.match(req);
+    if (cached) return cached;
+    throw e;
+  }
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
-
-  const url = new URL(req.url);
-  const isSameOrigin = url.origin === self.location.origin;
-
-  if (isSameOrigin) {
-    event.respondWith(
-      caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-        return res;
-      }).catch(() => cached))
-    );
-  } else {
-    event.respondWith(
-      fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-        return res;
-      }).catch(() => caches.match(req))
-    );
-  }
+  // Network-first for everything this app touches — same-origin app files
+  // and cross-origin assets (e.g. Google Fonts) alike — so you always see
+  // the latest version while online, with cache only as an offline fallback.
+  event.respondWith(networkFirst(req));
 });

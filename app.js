@@ -1,12 +1,20 @@
 (() => {
   "use strict";
 
+  /* ============ Build/version — bump this on every real change ============ */
+  const APP_VERSION = "2026-09-05.3";
+
   /* ============ Offline support (PWA) ============ */
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch(() => { /* offline caching unavailable, app still works online */ });
+      navigator.serviceWorker.register("sw.js")
+        .then((reg) => reg.update()) // always check for a newer sw.js right away
+        .catch(() => { /* offline caching unavailable, app still works online */ });
     });
   }
+
+  const buildTagEl = document.getElementById("buildTag");
+  if (buildTagEl) buildTagEl.textContent = `build ${APP_VERSION}`;
 
   /* ============ IST-aware date helpers ============ */
   // Returns a Date object whose get*() components equal IST wall-clock time,

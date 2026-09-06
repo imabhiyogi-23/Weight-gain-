@@ -18,6 +18,19 @@ No build step, no backend, no signup — pure HTML/CSS/JS. Your data is saved lo
 - **Works offline** — installable as a PWA (Progressive Web App) with a service worker, so once you've opened it online once, it keeps working with no internet connection.
 - **Editable profile** — name, age, height, weight, target weight, sleep goal, and activity level; all goals recalculate automatically.
 
+## Not seeing your changes / a previous version keeps showing up?
+
+The service worker caches app files for offline use, and earlier builds of it cached too aggressively (cache-first), which could make an old version stick around even after the files changed. That's fixed now — it's network-first, so an online browser always fetches the latest files and only falls back to cache when there's no connection.
+
+To confirm you're on the latest build, check the small `build 2026-09-05.3`-style tag under the GAINLINE logo in the top-left — compare it against the version noted in the app's latest change notes.
+
+If you were already using an older version of this app in your browser before this fix, do a **one-time hard refresh** to clear out the old stuck cache:
+- **Desktop Chrome/Edge:** DevTools (F12) → Application tab → Service Workers → click "Unregister", then hard-reload with `Ctrl+Shift+R` (`Cmd+Shift+R` on Mac).
+- **Mobile:** open the site's info/settings and "Clear site data" (or uninstall the "installed" PWA, then revisit the URL and reinstall).
+- **Simplest fix on any device:** open the page in a private/incognito window — that never has the old cache, so you can confirm the fix works, then clear the regular window's cache the same way.
+
+After that one-time cleanup, future updates will show up automatically the next time you're online — no more manual clearing needed.
+
 ## Running it locally
 
 **Important:** open this with a local server, not by double-clicking `index.html`. Offline support (the service worker) only works over `http://` or `https://` — browsers block service workers on the `file://` protocol. Everything else (tracking, alarms, clocks) works either way, but for the full offline experience, use a server:
