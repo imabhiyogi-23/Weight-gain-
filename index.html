@@ -225,15 +225,24 @@
         <p class="calendar-legend">● day with a meal logged</p>
       </div>
 
+      <div class="quick-add-block">
+        <p class="quick-add-label">Quick add — fills the form below with an estimate, edit before adding</p>
+        <div class="quick-add-row">
+          <button type="button" class="quick-add-chip" id="presetShake">💪 Weight gain shake</button>
+          <button type="button" class="quick-add-chip" id="presetRagi">🌾 Ragi millet shake</button>
+          <button type="button" class="quick-add-chip" id="presetCreatine">⚡ Creatine (5g)</button>
+        </div>
+      </div>
+
       <form class="log-form" id="foodForm">
         <input type="text" id="foodName" placeholder="What did you eat?" required maxlength="60">
         <div class="log-form-row">
-          <input type="number" id="foodCalories" placeholder="Calories" min="0" required>
-          <input type="number" id="foodProtein" placeholder="Protein (g)" min="0">
+          <input type="number" id="foodCalories" placeholder="Calories" min="0" step="any" required>
+          <input type="number" id="foodProtein" placeholder="Protein (g)" min="0" step="any">
         </div>
         <div class="log-form-row">
-          <input type="number" id="foodCarbs" placeholder="Carbs (g)" min="0">
-          <input type="number" id="foodFats" placeholder="Fats (g)" min="0">
+          <input type="number" id="foodCarbs" placeholder="Carbs (g)" min="0" step="any">
+          <input type="number" id="foodFats" placeholder="Fats (g)" min="0" step="any">
         </div>
         <button type="submit" class="btn-primary">Add to today's log</button>
       </form>
@@ -257,6 +266,30 @@
         </div>
         <p class="alarm-block-sub">Get a nudge if you haven't logged a meal in a while.</p>
         <input type="time" id="foodAlarmTime" class="alarm-time-input">
+      </div>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Protein / weight gain shake reminder</h3>
+          <label class="switch">
+            <input type="checkbox" id="shakeAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <p class="alarm-block-sub">A daily nudge to have your protein or ragi shake.</p>
+        <input type="time" id="shakeAlarmTime" class="alarm-time-input">
+      </div>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Creatine reminder</h3>
+          <label class="switch">
+            <input type="checkbox" id="creatineAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <p class="alarm-block-sub">A daily nudge to take your creatine — consistency matters more than timing.</p>
+        <input type="time" id="creatineAlarmTime" class="alarm-time-input">
       </div>
     </section>
 
@@ -314,7 +347,7 @@
         </div>
         <p class="alarm-block-sub">Repeats every N hours while the app is open.</p>
         <div class="log-form-row">
-          <input type="number" id="waterAlarmInterval" class="alarm-time-input" min="1" max="6" value="2">
+          <input type="number" id="waterAlarmInterval" class="alarm-time-input" min="1" max="6" step="any" value="2">
           <span class="alarm-suffix">hours</span>
         </div>
       </div>
@@ -452,7 +485,7 @@
         <input type="number" id="pAge" min="10" max="100" required>
       </label>
       <label>Height (cm)
-        <input type="number" id="pHeight" min="100" max="230" required>
+        <input type="number" id="pHeight" min="100" max="230" step="any" required>
       </label>
       <label>Current weight (kg)
         <input type="number" id="pWeight" step="0.1" min="20" max="200" required>

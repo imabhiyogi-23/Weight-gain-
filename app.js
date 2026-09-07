@@ -2,7 +2,7 @@
   "use strict";
 
   /* ============ Build/version — bump this on every real change ============ */
-  const APP_VERSION = "2026-09-06.3";
+  const APP_VERSION = "2026-09-07.1";
 
   /* ============ Offline support (PWA) ============ */
   if ("serviceWorker" in navigator) {
@@ -75,7 +75,9 @@
     food: { enabled: false, time: "13:00" },
     water: { enabled: false, intervalHours: 2, lastFiredAt: null },
     bedtime: { enabled: false, time: "22:30" },
-    wake: { enabled: false, time: "06:30" }
+    wake: { enabled: false, time: "06:30" },
+    shake: { enabled: false, time: "08:00" },
+    creatine: { enabled: false, time: "08:00" }
   };
 
   const WATER_GOAL_GLASSES = 10; // ~2500ml, standard daily hydration target
@@ -595,11 +597,14 @@
   foodForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const name = document.getElementById("foodName").value.trim();
-    const calories = Number(document.getElementById("foodCalories").value);
+    const caloriesRaw = document.getElementById("foodCalories").value;
+    const calories = Number(caloriesRaw);
     const protein = Number(document.getElementById("foodProtein").value) || 0;
     const carbs = Number(document.getElementById("foodCarbs").value) || 0;
     const fats = Number(document.getElementById("foodFats").value) || 0;
-    if (!name || !calories) return;
+    // caloriesRaw === "" guards against blank input; 0 is a legitimate value
+    // (e.g. creatine, black coffee) that a plain `!calories` check would reject.
+    if (!name || caloriesRaw === "" || isNaN(calories)) return;
 
     const list = load(foodKey(viewDate), []);
     list.push({ name, calories, protein, carbs, fats });
@@ -608,6 +613,41 @@
     foodForm.reset();
     renderFoodList();
     renderDashboard();
+  });
+
+  /* ============ Quick-add presets (shake / ragi shake / creatine) ============ */
+  // Generic estimates — real products vary a lot, so these prefill the form
+  // for the person to check/adjust against their actual label before adding.
+  const FOOD_PRESETS = {
+    presetShake: {
+      name: "Weight gain protein shake (2 scoops + milk)",
+      calories: 450, protein: 25, carbs: 55, fats: 8
+    },
+    presetRagi: {
+      name: "Ragi (finger millet) milk shake",
+      calories: 230, protein: 9, carbs: 30, fats: 7
+    },
+    presetCreatine: {
+      // Creatine monohydrate carries no meaningful calories/macros of its own —
+      // it doesn't count toward the protein goal even though it's an amino
+      // acid derivative. Logged mainly so it shows up on the calendar/history.
+      name: "Creatine (5g)",
+      calories: 0, protein: 0, carbs: 0, fats: 0
+    }
+  };
+
+  Object.keys(FOOD_PRESETS).forEach((btnId) => {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const p = FOOD_PRESETS[btnId];
+      document.getElementById("foodName").value = p.name;
+      document.getElementById("foodCalories").value = p.calories;
+      document.getElementById("foodProtein").value = p.protein;
+      document.getElementById("foodCarbs").value = p.carbs;
+      document.getElementById("foodFats").value = p.fats;
+      document.getElementById("foodName").scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   });
 
   /* ============ Water tracker ============ */
@@ -819,36 +859,36 @@
   function saveAlarms() { save(K_ALARMS, alarms); }
 
   function initAlarmUI() {
-    const foodEnabled = document.getElementById("foodAlarmEnabled");
-    const foodTime = document.getElementById("foodAlarmTime");
-    const waterEnabled = document.getElementById("waterAlarmEnabled");
-    const waterInterval = document.getElementById("waterAlarmInterval");
-    const bedtimeEnabled = document.getElementById("bedtimeAlarmEnabled");
-    const bedtimeTime = document.getElementById("bedtimeAlarmTime");
-    const wakeEnabled = document.getElementById("wakeAlarmEnabled");
-    const wakeTime = document.getElementById("wakeAlarmTime");
-
-    foodEnabled.checked = alarms.food.enabled;
-    foodTime.value = alarms.food.time;
-    waterEnabled.checked = alarms.water.enabled;
-    waterInterval.value = alarms.water.intervalHours;
-    bedtimeEnabled.checked = alarms.bedtime.enabled;
-    bedtimeTime.value = alarms.bedtime.time;
-    wakeEnabled.checked = alarms.wake.enabled;
-    wakeTime.value = alarms.wake.time;
-
     function maybeRequestPermission() {
       if ("Notification" in window && Notification.permission === "default") {
         Notification.requestPermission();
       }
     }
 
-    foodEnabled.addEventListener("change", () => {
-      alarms.food.enabled = foodEnabled.checked;
-      saveAlarms();
-      if (foodEnabled.checked) maybeRequestPermission();
-    });
-    foodTime.addEventListener("change", () => { alarms.food.time = foodTime.value; saveAlarms(); });
+    function wireSimpleTimeAlarm(key, enabledId, timeId) {
+      const enabledEl = document.getElementById(enabledId);
+      const timeEl = document.getElementById(timeId);
+      if (!enabledEl || !timeEl) return;
+      enabledEl.checked = alarms[key].enabled;
+      timeEl.value = alarms[key].time;
+      enabledEl.addEventListener("change", () => {
+        alarms[key].enabled = enabledEl.checked;
+        saveAlarms();
+        if (enabledEl.checked) maybeRequestPermission();
+      });
+      timeEl.addEventListener("change", () => { alarms[key].time = timeEl.value; saveAlarms(); });
+    }
+
+    wireSimpleTimeAlarm("food", "foodAlarmEnabled", "foodAlarmTime");
+    wireSimpleTimeAlarm("bedtime", "bedtimeAlarmEnabled", "bedtimeAlarmTime");
+    wireSimpleTimeAlarm("wake", "wakeAlarmEnabled", "wakeAlarmTime");
+    wireSimpleTimeAlarm("shake", "shakeAlarmEnabled", "shakeAlarmTime");
+    wireSimpleTimeAlarm("creatine", "creatineAlarmEnabled", "creatineAlarmTime");
+
+    const waterEnabled = document.getElementById("waterAlarmEnabled");
+    const waterInterval = document.getElementById("waterAlarmInterval");
+    waterEnabled.checked = alarms.water.enabled;
+    waterInterval.value = alarms.water.intervalHours;
 
     waterEnabled.addEventListener("change", () => {
       alarms.water.enabled = waterEnabled.checked;
@@ -860,20 +900,6 @@
       alarms.water.intervalHours = Math.max(1, Number(waterInterval.value) || 2);
       saveAlarms();
     });
-
-    bedtimeEnabled.addEventListener("change", () => {
-      alarms.bedtime.enabled = bedtimeEnabled.checked;
-      saveAlarms();
-      if (bedtimeEnabled.checked) maybeRequestPermission();
-    });
-    bedtimeTime.addEventListener("change", () => { alarms.bedtime.time = bedtimeTime.value; saveAlarms(); });
-
-    wakeEnabled.addEventListener("change", () => {
-      alarms.wake.enabled = wakeEnabled.checked;
-      saveAlarms();
-      if (wakeEnabled.checked) maybeRequestPermission();
-    });
-    wakeTime.addEventListener("change", () => { alarms.wake.time = wakeTime.value; saveAlarms(); });
   }
 
   function beep() {
@@ -928,6 +954,14 @@
       lastFiredMinuteKey.wake = minuteStamp;
       fireAlarm("GAINLINE — Wake up", "Good morning — log last night's sleep and weigh in.");
     }
+    if (alarms.shake.enabled && alarms.shake.time === nowTime && lastFiredMinuteKey.shake !== minuteStamp) {
+      lastFiredMinuteKey.shake = minuteStamp;
+      fireAlarm("GAINLINE — Shake reminder", "Time for your protein or ragi shake.");
+    }
+    if (alarms.creatine.enabled && alarms.creatine.time === nowTime && lastFiredMinuteKey.creatine !== minuteStamp) {
+      lastFiredMinuteKey.creatine = minuteStamp;
+      fireAlarm("GAINLINE — Creatine reminder", "Time for your creatine.");
+    }
     if (alarms.water.enabled) {
       const last = alarms.water.lastFiredAt || 0;
       const intervalMs = (alarms.water.intervalHours || 2) * 3600 * 1000;
@@ -959,7 +993,9 @@
       const dayAlarms = [
         { label: "Meal reminder", cfg: alarms.food },
         { label: "Bedtime alarm", cfg: alarms.bedtime },
-        { label: "Wake alarm", cfg: alarms.wake }
+        { label: "Wake alarm", cfg: alarms.wake },
+        { label: "Shake reminder", cfg: alarms.shake },
+        { label: "Creatine reminder", cfg: alarms.creatine }
       ];
       const startOfLastActiveDay = new Date(lastActive);
       startOfLastActiveDay.setHours(0, 0, 0, 0);
