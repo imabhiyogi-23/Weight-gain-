@@ -2,7 +2,7 @@
   "use strict";
 
   /* ============ Build/version — bump this on every real change ============ */
-  const APP_VERSION = "2026-09-07.1";
+  const APP_VERSION = "2026-09-07.2";
 
   /* ============ Offline support (PWA) ============ */
   if ("serviceWorker" in navigator) {
