@@ -2,7 +2,7 @@
   "use strict";
 
   /* ============ Build/version — bump this on every real change ============ */
-  const APP_VERSION = "2026-09-07.2";
+  const APP_VERSION = "2026-09-13.1";
 
   /* ============ Offline support (PWA) ============ */
   if ("serviceWorker" in navigator) {
@@ -50,6 +50,7 @@
   const K_LAST_ACTIVE = "gainline_last_active_at";
   const foodKey = (d) => `gainline_food_${d}`;
   const waterKey = (d) => `gainline_water_${d}`;
+  const workoutKey = (d) => `gainline_workout_${d}`;
 
   const load = (key, fallback) => {
     try {
@@ -60,6 +61,12 @@
     }
   };
   const save = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+
+  // Caps any number to at most 2 decimal places and strips floating-point
+  // artifacts (e.g. 0.1 + 0.2 -> 0.30000000000000004 becomes 0.3). Used
+  // whenever a number is stored or displayed, so long decimals can never
+  // overflow card text and push other UI (like progress bars) out of view.
+  const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
   const DEFAULT_PROFILE = {
     name: "Abhishek H",
@@ -77,7 +84,8 @@
     bedtime: { enabled: false, time: "22:30" },
     wake: { enabled: false, time: "06:30" },
     shake: { enabled: false, time: "08:00" },
-    creatine: { enabled: false, time: "08:00" }
+    creatine: { enabled: false, time: "08:00" },
+    workout: { enabled: false, time: "18:00" }
   };
 
   const WATER_GOAL_GLASSES = 10; // ~2500ml, standard daily hydration target
@@ -298,7 +306,7 @@
     todayBtn.classList.toggle("show", !isToday);
   }
 
-  ["food", "water", "sleep"].forEach(wireDateNav);
+  ["food", "water", "sleep", "workout"].forEach(wireDateNav);
 
   /* ============ Calendar pickers (Food / Water / Sleep / Weight) ============ */
   const monthKeyOf = (dayKey) => dayKey.slice(0, 7); // "YYYY-MM"
@@ -307,6 +315,7 @@
     food: { open: false, monthKey: monthKeyOf(viewDate) },
     water: { open: false, monthKey: monthKeyOf(viewDate) },
     sleep: { open: false, monthKey: monthKeyOf(viewDate) },
+    workout: { open: false, monthKey: monthKeyOf(viewDate) },
     weight: { open: false, monthKey: monthKeyOf(appDayKey()), picked: null }
   };
 
@@ -333,6 +342,7 @@
     if (prefix === "water") return load(waterKey(dayKey), 0) > 0;
     if (prefix === "sleep") return !!getSleepLog().find((l) => l.day === dayKey);
     if (prefix === "weight") return !!getWeightLog().find((l) => l.date === dayKey);
+    if (prefix === "workout") return load(workoutKey(dayKey), []).length > 0;
     return false;
   }
 
@@ -419,6 +429,7 @@
   wireCalendar("water", "waterDateLabel");
   wireCalendar("sleep", "sleepDateLabel");
   wireCalendar("weight", "weightCalToggle");
+  wireCalendar("workout", "workoutDateLabel");
 
 
   const screens = document.querySelectorAll(".screen");
@@ -429,6 +440,7 @@
       screens.forEach((s) => s.classList.toggle("active", s.id === `screen-${target}`));
       navItems.forEach((n) => n.classList.toggle("active", n === btn));
       if (target === "progress") renderWeightChart();
+      if (target === "workout") renderWorkoutPreview();
     });
   });
 
@@ -487,15 +499,15 @@
 
     const food = load(foodKey(appDayKey()), []);
     const water = load(waterKey(appDayKey()), 0);
-    const eatenCal = food.reduce((s, f) => s + f.calories, 0);
-    const eatenProtein = food.reduce((s, f) => s + (f.protein || 0), 0);
-    const eatenCarbs = food.reduce((s, f) => s + (f.carbs || 0), 0);
-    const eatenFats = food.reduce((s, f) => s + (f.fats || 0), 0);
+    const eatenCal = round2(food.reduce((s, f) => s + f.calories, 0));
+    const eatenProtein = round2(food.reduce((s, f) => s + (f.protein || 0), 0));
+    const eatenCarbs = round2(food.reduce((s, f) => s + (f.carbs || 0), 0));
+    const eatenFats = round2(food.reduce((s, f) => s + (f.fats || 0), 0));
 
     document.getElementById("caloriesEatenToday").textContent = eatenCal;
     document.getElementById("calorieGoalDisplay").textContent = g.calorieGoal;
     document.getElementById("calorieProgressFill").style.width = Math.min(100, (eatenCal / g.calorieGoal) * 100) + "%";
-    const calLeft = Math.max(0, g.calorieGoal - eatenCal);
+    const calLeft = round2(Math.max(0, g.calorieGoal - eatenCal));
     document.getElementById("calorieRemainingText").textContent =
       calLeft === 0 ? "Surplus target hit for today 🎉" : `${calLeft} kcal left to hit today's surplus`;
 
@@ -523,6 +535,18 @@
     document.getElementById("sleepGoalDisplay").textContent = profile.sleepGoal;
     document.getElementById("sleepProgressFill").style.width = Math.min(100, (sleepHours / profile.sleepGoal) * 100) + "%";
 
+    const todaysWorkouts = getWorkoutLog(appDayKey());
+    const workoutStatusText = document.getElementById("workoutStatusText");
+    const workoutStatusSub = document.getElementById("workoutStatusSub");
+    if (todaysWorkouts.length > 0) {
+      const totalMin = Math.round(todaysWorkouts.reduce((s, w) => s + w.minutes, 0));
+      workoutStatusText.textContent = "Done ✓";
+      workoutStatusSub.textContent = `${todaysWorkouts.map((w) => w.categoryLabel).join(", ")} · ~${totalMin} min today`;
+    } else {
+      workoutStatusText.textContent = "Not yet";
+      workoutStatusSub.textContent = "Bodyweight strength circuit — open the Workout tab to start.";
+    }
+
     const tips = [
       "Small appetite, frequent plate: aim for 5–6 smaller meals instead of 3 big ones today.",
       "Drink your calories too — milk, peanut butter shakes and smoothies go down easier than a full plate.",
@@ -549,10 +573,10 @@
     renderCalendar("food");
     const food = load(foodKey(viewDate), []);
     const g = computeGoals(profile);
-    const eatenCal = food.reduce((s, f) => s + f.calories, 0);
-    const eatenProtein = food.reduce((s, f) => s + (f.protein || 0), 0);
-    const eatenCarbs = food.reduce((s, f) => s + (f.carbs || 0), 0);
-    const eatenFats = food.reduce((s, f) => s + (f.fats || 0), 0);
+    const eatenCal = round2(food.reduce((s, f) => s + f.calories, 0));
+    const eatenProtein = round2(food.reduce((s, f) => s + (f.protein || 0), 0));
+    const eatenCarbs = round2(food.reduce((s, f) => s + (f.carbs || 0), 0));
+    const eatenFats = round2(food.reduce((s, f) => s + (f.fats || 0), 0));
 
     document.getElementById("foodScreenEaten").textContent = eatenCal;
     document.getElementById("foodScreenGoal").textContent = g.calorieGoal;
@@ -598,10 +622,10 @@
     e.preventDefault();
     const name = document.getElementById("foodName").value.trim();
     const caloriesRaw = document.getElementById("foodCalories").value;
-    const calories = Number(caloriesRaw);
-    const protein = Number(document.getElementById("foodProtein").value) || 0;
-    const carbs = Number(document.getElementById("foodCarbs").value) || 0;
-    const fats = Number(document.getElementById("foodFats").value) || 0;
+    const calories = round2(Number(caloriesRaw));
+    const protein = round2(Number(document.getElementById("foodProtein").value) || 0);
+    const carbs = round2(Number(document.getElementById("foodCarbs").value) || 0);
+    const fats = round2(Number(document.getElementById("foodFats").value) || 0);
     // caloriesRaw === "" guards against blank input; 0 is a legitimate value
     // (e.g. creatine, black coffee) that a plain `!calories` check would reject.
     if (!name || caloriesRaw === "" || isNaN(calories)) return;
@@ -763,7 +787,230 @@
     `).join("");
   }
 
-  /* ============ Weight progress ============ */
+  /* ============ Workout (bodyweight strength circuit) ============ */
+  // Inspired by analyzing how "Home Workout - No Equipment"-style apps
+  // structure things: pick a muscle-group focus, run a timed circuit with
+  // short rests between moves, log the session. Framed here around building
+  // muscle for the surplus to go toward, not fat loss.
+  const EXERCISE_SECONDS = 30;
+  const WORKOUT_REST_SECONDS = 15;
+  const ROUTINES = {
+    full: { label: "Full body", exercises: ["Jumping jacks", "Bodyweight squats", "Push-ups", "Plank", "Mountain climbers", "Alternating lunges"] },
+    upper: { label: "Upper body", exercises: ["Push-ups", "Incline push-ups", "Triceps dips", "Pike push-ups", "Plank shoulder taps", "Arm circles"] },
+    lower: { label: "Lower body", exercises: ["Bodyweight squats", "Alternating lunges", "Glute bridges", "Wall sit", "Calf raises", "Squat pulses"] },
+    core: { label: "Core", exercises: ["Crunches", "Plank", "Russian twists", "Leg raises", "Bicycle crunches", "Side plank"] }
+  };
+
+  let selectedCategory = "full";
+  let selectedRounds = 2;
+
+  function getWorkoutLog(dayKey) { return load(workoutKey(dayKey), []); }
+
+  function estimateWorkoutStats(category, rounds) {
+    const exerciseCount = ROUTINES[category].exercises.length;
+    const totalSteps = exerciseCount * rounds;
+    const totalSeconds = totalSteps * EXERCISE_SECONDS + (totalSteps - 1) * WORKOUT_REST_SECONDS;
+    const minutes = totalSeconds / 60;
+    const calories = Math.round(minutes * 6); // rough bodyweight-circuit estimate, not a medical figure
+    return { totalSeconds, minutes, calories, exerciseCount };
+  }
+
+  function renderWorkoutPreview() {
+    document.querySelectorAll(".category-chip").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.cat === selectedCategory);
+    });
+    document.getElementById("roundsValue").textContent = selectedRounds;
+
+    const routine = ROUTINES[selectedCategory];
+    document.getElementById("workoutExerciseList").innerHTML = routine.exercises.map((name) => `
+      <li><span>${escapeHtml(name)}</span><span>${EXERCISE_SECONDS}s</span></li>
+    `).join("");
+
+    const stats = estimateWorkoutStats(selectedCategory, selectedRounds);
+    document.getElementById("workoutPreviewMeta").textContent =
+      `${stats.exerciseCount} exercises × ${selectedRounds} round${selectedRounds > 1 ? "s" : ""} · ~${Math.round(stats.minutes)} min · ~${stats.calories} kcal (estimate)`;
+  }
+
+  document.getElementById("workoutCategoryChips").querySelectorAll(".category-chip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      selectedCategory = btn.dataset.cat;
+      renderWorkoutPreview();
+    });
+  });
+  document.getElementById("roundsMinus").addEventListener("click", () => {
+    selectedRounds = Math.max(1, selectedRounds - 1);
+    renderWorkoutPreview();
+  });
+  document.getElementById("roundsPlus").addEventListener("click", () => {
+    selectedRounds = Math.min(5, selectedRounds + 1);
+    renderWorkoutPreview();
+  });
+
+  /* ---- Runner (the active timed-circuit session) ---- */
+  const runnerBackdrop = document.getElementById("workoutRunnerBackdrop");
+  const runnerActiveView = document.getElementById("runnerActiveView");
+  const runnerCompleteView = document.getElementById("runnerCompleteView");
+  const RUNNER_RING_CIRC = 2 * Math.PI * 88;
+
+  let runnerSequence = [];
+  let runnerIndex = 0;
+  let runnerRemaining = 0;
+  let runnerStepTotal = 0;
+  let runnerPaused = false;
+  let runnerFinished = false;
+  let runnerIntervalId = null;
+  let runnerCategoryUsed = "full";
+  let runnerRoundsUsed = 1;
+
+  function buildSequence(category, rounds) {
+    const exercises = ROUTINES[category].exercises;
+    const seq = [];
+    for (let r = 0; r < rounds; r++) {
+      for (let i = 0; i < exercises.length; i++) {
+        seq.push({ type: "work", name: exercises[i], seconds: EXERCISE_SECONDS, round: r });
+        const isVeryLastStep = r === rounds - 1 && i === exercises.length - 1;
+        if (!isVeryLastStep) {
+          const nextName = i < exercises.length - 1 ? exercises[i + 1] : exercises[0];
+          seq.push({ type: "rest", name: "Rest", seconds: WORKOUT_REST_SECONDS, round: r, nextName });
+        }
+      }
+    }
+    return seq;
+  }
+
+  function startWorkout() {
+    runnerCategoryUsed = selectedCategory;
+    runnerRoundsUsed = selectedRounds;
+    runnerSequence = buildSequence(selectedCategory, selectedRounds);
+    runnerIndex = 0;
+    runnerPaused = false;
+    runnerFinished = false;
+    runnerCompleteView.classList.remove("show");
+    runnerActiveView.style.display = "";
+    runnerBackdrop.classList.add("open");
+    beginStep();
+  }
+  document.getElementById("startWorkoutBtn").addEventListener("click", startWorkout);
+
+  function beginStep() {
+    if (runnerFinished) return;
+    const step = runnerSequence[runnerIndex];
+    if (!step) { finishWorkout(); return; }
+    runnerRemaining = step.seconds;
+    runnerStepTotal = step.seconds;
+    renderRunnerStep();
+    clearInterval(runnerIntervalId);
+    runnerIntervalId = setInterval(tickRunner, 1000);
+  }
+
+  function tickRunner() {
+    if (runnerFinished) { clearInterval(runnerIntervalId); return; }
+    if (runnerPaused) return;
+    runnerRemaining -= 1;
+    if (runnerRemaining <= 0) {
+      runnerIndex += 1;
+      beginStep();
+    } else {
+      renderRunnerStep();
+    }
+  }
+
+  function renderRunnerStep() {
+    const step = runnerSequence[runnerIndex];
+    if (!step) return;
+    const exerciseSteps = runnerSequence.filter((s) => s.type === "work");
+    const workStepNumber = runnerSequence.slice(0, runnerIndex + 1).filter((s) => s.type === "work").length;
+
+    document.getElementById("runnerProgressLabel").textContent =
+      step.type === "work"
+        ? `Exercise ${workStepNumber} of ${exerciseSteps.length} · Round ${step.round + 1} of ${runnerRoundsUsed}`
+        : `Rest · Round ${step.round + 1} of ${runnerRoundsUsed}`;
+    document.getElementById("runnerExerciseName").textContent = step.type === "work" ? step.name : "Rest";
+    document.getElementById("runnerSeconds").textContent = runnerRemaining;
+    document.getElementById("runnerPhase").textContent = step.type === "work" ? "Work" : "Rest";
+
+    const nextStep = runnerSequence[runnerIndex + 1];
+    document.getElementById("runnerNextLabel").textContent =
+      nextStep ? `Next: ${nextStep.type === "work" ? nextStep.name : "Rest"}` : "Last one — almost there!";
+
+    const ring = document.getElementById("runnerRingFill");
+    const pct = runnerRemaining / runnerStepTotal;
+    ring.style.strokeDasharray = RUNNER_RING_CIRC;
+    ring.style.strokeDashoffset = RUNNER_RING_CIRC * (1 - pct);
+    ring.classList.toggle("phase-rest", step.type === "rest");
+  }
+
+  function setPauseIcon(paused) {
+    const icon = document.getElementById("runnerPauseIcon");
+    icon.innerHTML = paused
+      ? `<path d="M7 5l12 7-12 7V5z"/>`
+      : `<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>`;
+  }
+
+  document.getElementById("runnerPauseBtn").addEventListener("click", () => {
+    runnerPaused = !runnerPaused;
+    setPauseIcon(runnerPaused);
+  });
+  document.getElementById("runnerSkipBtn").addEventListener("click", () => {
+    if (runnerFinished) return;
+    runnerIndex += 1;
+    beginStep();
+  });
+  document.getElementById("runnerEndBtn").addEventListener("click", () => {
+    clearInterval(runnerIntervalId);
+    runnerBackdrop.classList.remove("open");
+  });
+  document.getElementById("runnerDoneBtn").addEventListener("click", () => {
+    runnerBackdrop.classList.remove("open");
+    renderWorkout();
+    renderDashboard();
+  });
+
+  function finishWorkout() {
+    if (runnerFinished) return; // already logged this session — ignore any further trigger
+    runnerFinished = true;
+    clearInterval(runnerIntervalId);
+    const stats = estimateWorkoutStats(runnerCategoryUsed, runnerRoundsUsed);
+    const list = getWorkoutLog(viewDate);
+    list.push({
+      category: runnerCategoryUsed,
+      categoryLabel: ROUTINES[runnerCategoryUsed].label,
+      rounds: runnerRoundsUsed,
+      minutes: round2(stats.minutes),
+      calories: stats.calories
+    });
+    save(workoutKey(viewDate), list);
+
+    runnerActiveView.style.display = "none";
+    runnerCompleteView.classList.add("show");
+    document.getElementById("runnerCompleteStat").textContent =
+      `${ROUTINES[runnerCategoryUsed].label} · ${runnerRoundsUsed} round${runnerRoundsUsed > 1 ? "s" : ""} · ~${Math.round(stats.minutes)} min · ~${stats.calories} kcal (estimate)`;
+  }
+
+  /* ---- Workout screen (date-nav + calendar + history) ---- */
+  function renderWorkout() {
+    renderDateNav("workout");
+    renderCalendar("workout");
+    renderWorkoutPreview();
+
+    const list = getWorkoutLog(viewDate);
+    const entryList = document.getElementById("workoutEntryList");
+    if (list.length === 0) {
+      const dayWord = viewDate === appDayKey() ? "today" : "on " + formatDateLabel(viewDate).toLowerCase();
+      entryList.innerHTML = `<li class="empty-state">No workout logged ${dayWord} yet.</li>`;
+    } else {
+      entryList.innerHTML = list.map((w) => `
+        <li class="entry-row">
+          <div>
+            <div class="entry-name">${escapeHtml(w.categoryLabel)} · ${w.rounds} round${w.rounds > 1 ? "s" : ""}</div>
+            <div class="entry-meta">~${Math.round(w.minutes)} min · ~${w.calories} kcal (estimate)</div>
+          </div>
+        </li>
+      `).join("");
+    }
+  }
+
+
   const weightForm = document.getElementById("weightForm");
   const weightEntryList = document.getElementById("weightEntryList");
 
@@ -771,7 +1018,7 @@
 
   weightForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const val = Number(document.getElementById("weightInput").value);
+    const val = round2(Number(document.getElementById("weightInput").value));
     if (!val) return;
     const log = getWeightLog();
     const day = appDayKey();
@@ -884,6 +1131,7 @@
     wireSimpleTimeAlarm("wake", "wakeAlarmEnabled", "wakeAlarmTime");
     wireSimpleTimeAlarm("shake", "shakeAlarmEnabled", "shakeAlarmTime");
     wireSimpleTimeAlarm("creatine", "creatineAlarmEnabled", "creatineAlarmTime");
+    wireSimpleTimeAlarm("workout", "workoutAlarmEnabled", "workoutAlarmTime");
 
     const waterEnabled = document.getElementById("waterAlarmEnabled");
     const waterInterval = document.getElementById("waterAlarmInterval");
@@ -962,6 +1210,10 @@
       lastFiredMinuteKey.creatine = minuteStamp;
       fireAlarm("GAINLINE — Creatine reminder", "Time for your creatine.");
     }
+    if (alarms.workout.enabled && alarms.workout.time === nowTime && lastFiredMinuteKey.workout !== minuteStamp) {
+      lastFiredMinuteKey.workout = minuteStamp;
+      fireAlarm("GAINLINE — Workout reminder", "Time for today's strength circuit.");
+    }
     if (alarms.water.enabled) {
       const last = alarms.water.lastFiredAt || 0;
       const intervalMs = (alarms.water.intervalHours || 2) * 3600 * 1000;
@@ -995,7 +1247,8 @@
         { label: "Bedtime alarm", cfg: alarms.bedtime },
         { label: "Wake alarm", cfg: alarms.wake },
         { label: "Shake reminder", cfg: alarms.shake },
-        { label: "Creatine reminder", cfg: alarms.creatine }
+        { label: "Creatine reminder", cfg: alarms.creatine },
+        { label: "Workout reminder", cfg: alarms.workout }
       ];
       const startOfLastActiveDay = new Date(lastActive);
       startOfLastActiveDay.setHours(0, 0, 0, 0);
@@ -1051,6 +1304,7 @@
     renderFoodList();
     renderWater();
     renderSleep();
+    renderWorkout();
     renderWeightList();
     renderWeightChart();
   }

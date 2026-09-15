@@ -192,6 +192,12 @@
           <p class="card-sub">Growth and appetite hormones reset while you sleep.</p>
         </div>
 
+        <div class="card card-workout">
+          <p class="card-label">Workout today</p>
+          <p class="card-big" id="workoutStatusText">Not yet</p>
+          <p class="card-sub" id="workoutStatusSub">Bodyweight strength circuit — open the Workout tab to start.</p>
+        </div>
+
       </div>
 
       <div class="tip-strip" id="tipStrip">
@@ -246,12 +252,12 @@
       <form class="log-form" id="foodForm">
         <input type="text" id="foodName" placeholder="What did you eat?" required maxlength="60">
         <div class="log-form-row">
-          <input type="number" id="foodCalories" placeholder="Calories" min="0" step="any" required>
-          <input type="number" id="foodProtein" placeholder="Protein (g)" min="0" step="any">
+          <input type="number" id="foodCalories" placeholder="Calories" min="0" step="0.01" required>
+          <input type="number" id="foodProtein" placeholder="Protein (g)" min="0" step="0.01">
         </div>
         <div class="log-form-row">
-          <input type="number" id="foodCarbs" placeholder="Carbs (g)" min="0" step="any">
-          <input type="number" id="foodFats" placeholder="Fats (g)" min="0" step="any">
+          <input type="number" id="foodCarbs" placeholder="Carbs (g)" min="0" step="0.01">
+          <input type="number" id="foodFats" placeholder="Fats (g)" min="0" step="0.01">
         </div>
         <button type="submit" class="btn-primary">Add to today's log</button>
       </form>
@@ -356,7 +362,7 @@
         </div>
         <p class="alarm-block-sub">Repeats every N hours while the app is open.</p>
         <div class="log-form-row">
-          <input type="number" id="waterAlarmInterval" class="alarm-time-input" min="1" max="6" step="any" value="2">
+          <input type="number" id="waterAlarmInterval" class="alarm-time-input" min="1" max="6" step="0.5" value="2">
           <span class="alarm-suffix">hours</span>
         </div>
       </div>
@@ -423,6 +429,66 @@
       </div>
     </section>
 
+    <!-- ============ WORKOUT ============ -->
+    <section class="screen" id="screen-workout">
+      <h2 class="screen-title">Strength circuit</h2>
+      <p class="screen-sub">Bodyweight only, no equipment — pick a focus and go.</p>
+
+      <div class="quick-add-row" id="workoutCategoryChips">
+        <button type="button" class="quick-add-chip category-chip active" data-cat="full">Full body</button>
+        <button type="button" class="quick-add-chip category-chip" data-cat="upper">Upper body</button>
+        <button type="button" class="quick-add-chip category-chip" data-cat="lower">Lower body</button>
+        <button type="button" class="quick-add-chip category-chip" data-cat="core">Core</button>
+      </div>
+
+      <div class="rounds-picker">
+        <span class="rounds-label">Rounds</span>
+        <button type="button" class="btn-round" id="roundsMinus" aria-label="Fewer rounds">–</button>
+        <span class="rounds-value" id="roundsValue">2</span>
+        <button type="button" class="btn-round" id="roundsPlus" aria-label="More rounds">+</button>
+      </div>
+
+      <div class="workout-preview-card">
+        <p class="workout-preview-label">Today's plan</p>
+        <ul class="workout-exercise-list" id="workoutExerciseList"></ul>
+        <p class="workout-preview-meta" id="workoutPreviewMeta">—</p>
+        <button type="button" class="btn-primary btn-block" id="startWorkoutBtn">Start workout</button>
+      </div>
+
+      <div class="date-nav">
+        <button class="date-nav-arrow" id="workoutPrevDay" aria-label="Previous day">‹</button>
+        <div class="date-nav-center">
+          <button type="button" class="date-nav-label" id="workoutDateLabel">Today</button>
+          <button class="date-nav-today" id="workoutJumpToday">Jump to today</button>
+        </div>
+        <button class="date-nav-arrow" id="workoutNextDay" aria-label="Next day">›</button>
+      </div>
+
+      <div class="calendar-panel" id="workoutCalendarPanel">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" id="workoutCalPrevMonth" aria-label="Previous month">‹</button>
+          <span class="calendar-month-label" id="workoutCalMonthLabel">—</span>
+          <button type="button" class="calendar-nav-btn" id="workoutCalNextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+        <div class="calendar-grid" id="workoutCalGrid"></div>
+        <p class="calendar-legend">● day with a workout logged</p>
+      </div>
+
+      <ul class="entry-list" id="workoutEntryList"></ul>
+
+      <div class="alarm-block">
+        <div class="alarm-block-head">
+          <h3>Workout reminder</h3>
+          <label class="switch">
+            <input type="checkbox" id="workoutAlarmEnabled">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <input type="time" id="workoutAlarmTime" class="alarm-time-input">
+      </div>
+    </section>
+
     <!-- ============ PROGRESS ============ -->
     <section class="screen" id="screen-progress">
       <h2 class="screen-title">Weight progress</h2>
@@ -474,6 +540,10 @@
       <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>
       <span>Sleep</span>
     </button>
+    <button class="nav-item" data-screen="workout">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 9v6M2 10v4M20 9v6M22 10v4"/><rect x="6" y="7" width="3" height="10" rx="1"/><rect x="15" y="7" width="3" height="10" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+      <span>Workout</span>
+    </button>
     <button class="nav-item" data-screen="progress">
       <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
       <span>Progress</span>
@@ -494,7 +564,7 @@
         <input type="number" id="pAge" min="10" max="100" required>
       </label>
       <label>Height (cm)
-        <input type="number" id="pHeight" min="100" max="230" step="any" required>
+        <input type="number" id="pHeight" min="100" max="230" step="0.1" required>
       </label>
       <label>Current weight (kg)
         <input type="number" id="pWeight" step="0.1" min="20" max="200" required>
@@ -517,6 +587,39 @@
         <button type="submit" class="btn-primary">Save</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ============ WORKOUT RUNNER OVERLAY ============ -->
+<div class="modal-backdrop" id="workoutRunnerBackdrop">
+  <div class="modal workout-runner-modal">
+    <div id="runnerActiveView">
+      <p class="runner-progress-label" id="runnerProgressLabel">Exercise 1 of 6 · Round 1 of 2</p>
+      <h3 class="runner-exercise-name" id="runnerExerciseName">Jumping Jacks</h3>
+      <div class="runner-ring-wrap">
+        <svg viewBox="0 0 200 200" class="runner-ring">
+          <circle cx="100" cy="100" r="88" class="runner-ring-track"/>
+          <circle cx="100" cy="100" r="88" class="runner-ring-fill" id="runnerRingFill"/>
+        </svg>
+        <div class="runner-ring-center">
+          <span class="runner-seconds" id="runnerSeconds">30</span>
+          <span class="runner-phase" id="runnerPhase">Work</span>
+        </div>
+      </div>
+      <p class="runner-next-label" id="runnerNextLabel">Next: Bodyweight squats</p>
+      <div class="runner-controls">
+        <button type="button" class="btn-round btn-round-lg" id="runnerPauseBtn" aria-label="Pause">
+          <svg class="chip-icon" id="runnerPauseIcon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+        </button>
+        <button type="button" class="btn-primary btn-block" id="runnerSkipBtn">Skip</button>
+      </div>
+      <button type="button" class="preset-delete-link" id="runnerEndBtn">End workout</button>
+    </div>
+    <div id="runnerCompleteView" class="runner-complete-view">
+      <h3>Workout complete 🎉</h3>
+      <p class="runner-complete-stat" id="runnerCompleteStat">—</p>
+      <button type="button" class="btn-primary btn-block" id="runnerDoneBtn">Done</button>
+    </div>
   </div>
 </div>
 
